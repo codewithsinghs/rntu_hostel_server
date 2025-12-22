@@ -1,0 +1,304 @@
+.hostel-status-section {
+  margin: 20px;
+  box-shadow: rgba(17, 17, 26, 0.05) 0px 1px 0px, rgba(17, 17, 26, 0.1) 0px 0px 8px;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.hostel-status-section .hostel-status-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hostel-status-section .hostel-status-btn .status-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hostel-status-section .hostel-status-btn .status-btn label {
+  width: 150px;
+  font-size: 14px;
+  line-height: 140%;
+  font-family: Helvetica;
+  color: #2d3748;
+  text-align: left;
+  margin-bottom: 5px;
+}
+
+.hostel-status-section .hostel-status-btn .status-btn select {
+  border: none;
+  width: 100%;
+  border-radius: 6.77px;
+  background-color: #F5F7FA;
+  background-image: url(../../public/dashboard/drop\ arrow.png);
+  height: 49px;
+  overflow: hidden;
+  text-align: left;
+  font-size: 14px;
+  color: #a0aec0;
+  font-family: Helvetica;
+  padding: 10px;
+  background-size: 10px;
+}
+
+.hostel-status-title {
+  padding: 0 10px;
+  font-size: 18px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.hostel-status-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.hostel-progress-card {
+  width: 200px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.progress-circle {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.progress-circle svg {
+  width: 120px;
+  height: 120px;
+}
+
+.progress-circle circle {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.progress-circle circle:first-child {
+  stroke: #e6e6e6;
+}
+
+.progress-circle circle:last-child {
+  stroke: #00c9a7;
+  stroke-dasharray: 314;
+  stroke-dashoffset: 157;
+  /* 50% progress */
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.progress-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.hostel-name {
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.fee-details,
+.assets {
+  padding: 10px;
+  border: 1.3px solid #eff0f6;
+  box-shadow: 0px 6.431064605712891px 18.01px rgba(8, 15, 52, 0.04);
+  border-radius: 10px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.fee-details li,
+.assets li {
+  width: 100%;
+  font-size: 13px;
+  position: relative;
+  border-radius: 10px;
+  background-color: #e7ecee;
+  height: 37px;
+  padding: 20px;
+  align-items: anchor-center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0.4rem 0;
+}
+
+.fee-details h4,
+.assets h4 {
+  font-size: 12px;
+  margin-bottom: 0.8rem;
+}
+
+.fee-details ul,
+.assets ul {
+  list-style: none;
+  padding: 0;
+}
+
+
+.fee-details li span,
+.assets li span {
+  font-weight: 600;
+  color: #1F384C;
+}
+
+.hostel-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  flex: 2;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: anchor-center;
+  box-shadow: 0px 6.431064605712891px 18.01px rgba(8, 15, 52, 0.04);
+  border-radius: 10px;
+  background-color: #fff;
+  border: 1.3px solid #eff0f6;
+  padding: 10px;
+  text-align: center;
+  font-size: 10px;
+}
+
+
+.stat-card p {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 15px;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card small {
+  background: var(--primary-clr);
+  color: white;
+  padding: .5rem 15px;
+  border-radius: .5rem;
+}
+
+.hostel-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.hostel-actions button {
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.hostel-actions button span img {
+  width: 20px;
+}
+
+.hostel-actions .edit {
+  background-color: #ffa500;
+}
+
+.hostel-actions .delete {
+  background-color: #ff4d4f;
+}
+
+.hostel-actions .remove {
+  background-color: #002b5b;
+}
+
+.hostel-actions .add {
+  background-color: #00c9a7;
+}
+
+#hostelListSection {
+  font-family: 'Segoe UI', sans-serif;
+  padding: 0 10px 20px;
+}
+
+#hostelTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background-color: white;
+}
+
+.hostel-staff {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+@media screen and (max-width: 2000px) and (min-width: 1799px) {
+  .hostel-staff {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media screen and (max-width: 1800px) and (min-width: 1599px) {
+  .hostel-staff {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media screen and (max-width: 1600px) and (min-width: 1300px) {
+  .hostel-staff {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media screen and (max-width: 1299px) and (min-width: 1000px) {
+  .hostel-staff {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 999px) and (min-width: 200px) {
+  .hostel-staff {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .hostel-status-container {
+    flex-direction: column;
+  }
+
+  .hostel-status-title {
+    padding: 0;
+    font-size: 15px;
+  }
+
+  .hostel-status-section .hostel-status-btn {
+    flex-direction: column;
+    align-items: start;
+  }
+}

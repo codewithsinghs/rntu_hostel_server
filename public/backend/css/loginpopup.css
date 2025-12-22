@@ -1,0 +1,292 @@
+/* Login Modal Styles */
+.login-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.login-modal-content {
+  background: white;
+  border-radius: 10px;
+  min-width: 860px;
+  max-width: 830px;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 20px;
+  position: relative;
+  justify-content: space-between;
+}
+
+.close-btn {
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  background: #f55;
+  color: white;
+  border: none;
+  font-size: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  z-index: 3;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.login-left {
+  flex: 1;
+  text-align: center;
+  align-content: center;
+  padding: 0 20px;
+}
+
+.login-left p{
+    font-size: 13px;
+}
+
+.login-left p a{
+  color: #002B5B;
+  font-weight: 700;
+}
+
+.login-right {
+  width: 40%;
+}
+
+.login-left .or {
+    font-size: 15px;
+}
+
+.login-left .or span{
+  color: #fdc22f;
+  font-weight: 700;
+}
+
+.login-left h2 {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.groups-input{
+  text-align: left;
+  margin-top: 20px;
+  position: relative;
+}
+
+.border-style{
+    background: #F2F2F2;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.groups-input label{
+  font-size: 14px;
+  font-family: var(--ff-jakarta);
+  font-weight: 700;
+  color: #333;
+}
+
+.groups-input button.changeinput{
+  position: absolute;
+  bottom: -21px;
+  right: 14px;
+  color: #031b3d;
+  font-size: 14px;
+  font-weight: 700;
+
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.input-group .in-style{
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  border: none;
+  background: transparent;
+}
+
+.input-group .in-style:focus-visible{
+  outline: none;
+}
+
+.input-group .select-style {
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #002B5B;
+    color: white;
+}
+
+.otp-btn {
+  width: 28%;
+  background-color: #002c5f;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.otp-box {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0;
+  justify-content: space-between;
+  padding: 10px;
+  padding-top: 0px; 
+}
+
+.otp-box .otp-input {
+    width: 50px;
+    height: 50px;
+    font-size: 18px;
+    text-align: center;
+    border-radius: 10px;
+    border: none;
+    background: #F2F2F2;
+}
+
+.submit-btn {
+  font-size: 16px;
+  background-color: #002c5f;
+  color: white;
+  border: none;
+  padding: 15px;
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.or {
+  text-align: center;
+  margin: 15px 0;
+  font-weight: bold;
+}
+
+.alt-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.alt-btn {
+  border: 1px solid black;
+  padding: 10px 15px;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.login-right{
+  position: relative;
+}
+
+.login-right img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  z-index: 2;
+  position: relative;
+}
+
+.login-right::before {
+    content: "";
+    position: absolute;
+    bottom: -15px;
+    right: 15px;
+    width: 100%;
+    height: 100%;
+    background: rgba(235, 235, 235, 0.75);
+    z-index: 1;
+    border-radius: 15px;
+}
+
+@media screen and (max-width: 1400px) and (min-width: 1000px){
+  .login-modal-content{
+    max-width: 740px;
+  }
+  .otp-btn{
+    width: 34%;
+  }
+}
+
+@media screen and (max-width: 1000px) and (min-width: 520px){
+
+  .login-modal-content{
+    min-width: 450px;
+    max-width: 600px;
+  }
+
+  .login-container {
+    flex-direction: column;
+  }
+
+  .login-right img {
+    display: none;
+  }
+
+  .login-right {
+    order: -1;
+  }
+
+  .otp-box input {
+    width: 100%;
+    flex: 1;
+  }
+}
+
+
+@media screen and (max-width: 519px) and (min-width: 200px){
+
+  .login-modal-content{
+    min-width: 300px;
+    max-width: 600px;
+    padding: 20px 0px;
+    margin: 0 20px;
+  }
+
+  .otp-box .otp-input{
+    width: 30px;
+    height: 40px;
+
+  }
+
+  .login-container {
+    flex-direction: column;
+  }
+
+  .login-right img {
+    display: none;
+  }
+
+  .login-right {
+    order: -1;
+  }
+
+  .otp-box input {
+    width: 100%;
+    flex: 1;
+  }
+}
+

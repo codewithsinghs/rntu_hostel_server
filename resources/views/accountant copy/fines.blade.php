@@ -1,0 +1,158 @@
+@extends('accountant.layout')
+
+@section('content')
+<div class="container mt-5">
+    <h2 class="mb-4 text-center fw-bold">Fine List</h2>
+
+    <ul id="residentList" class="list-group">
+        <li class="list-group-item text-muted">Loading fines...</li>
+    </ul>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="fineModal" tabindex="-1" aria-labelledby="fineModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="fineForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="fineModalLabel">Fine Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Resident:</strong> <span id="modalResidentName"></span></p>
+                    <p><strong>Scholar No:</strong> <span id="modalScholarNo"></span></p>
+                    <p><strong>Proposed Amount:</strong> <span id="modalPropAmount"></span></p>
+                    <p><strong>Fine Date:</strong> <span id="modalFineDate"></span></p>
+                    <p><strong>Admin Remarks:</strong> <span id="modalAdminRemarks"></span></p>
+                  
+
+                    <div class="mb-3">
+                        <label class="form-label">Final Payable Amount</label>
+                        <input type="number" name="payable_amount" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Remarks (Optional)</label>
+                        <input type="text" name="payment_remarks" class="form-control">
+                    </div>
+                    <input type="hidden" name="resident_id">
+                    <input type="hidden" name="fine_id">
+                    <input type="hidden" name="payment_method" value="Null">
+                    <input type="hidden" name="created_by" value="{{ auth()->id() }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Submit Fine</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Styles & Scripts -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    const residentList = document.getElementById("residentList");
+    const fineModal = new bootstrap.Modal(document.getElementById('fineModal'));
+
+    // Function to render fetched data
+    async function loadFineDetails() {
+        try {
+            const res = await fetch("/api/accountant/view-fine-details", {
+                headers: {
+                    "Accept": "application/json",
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
+                }
+            });
+            const result = await res.json();
+            console.log( result);
+            if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+                residentList.innerHTML = "";
+
+                result.data.forEach(fine => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item d-flex justify-content-between align-items-center";
+
+                    li.innerHTML = `
+                        <div>
+                            <strong>${fine.resident_name}</strong> <br>
+                            <small>${fine.scholar_no}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary view-btn">Set Amount</button>
+                    `;
+
+                    li.querySelector('.view-btn').addEventListener("click", () => {
+                        // Fill modal fields
+                        document.getElementById("modalResidentName").textContent = fine.resident_name;
+                        document.getElementById("modalScholarNo").textContent = fine.scholar_no;
+                        document.getElementById("modalAdminRemarks").textContent = fine.admin_remarks || "N/A";
+                        document.getElementById("modalPropAmount").textContent = fine.proposed_amount || "N/A";
+                        document.getElementById("modalFineDate").textContent = fine.fine_date || "N/A";
+                        
+                        document.querySelector("#fineForm [name='resident_id']").value = fine.resident_id;
+                        document.querySelector("#fineForm [name='fine_id']").value = fine.fine_id;
+
+                        fineModal.show();
+                    });
+
+                    residentList.appendChild(li);
+                });
+            } else {
+                residentList.innerHTML = `<li class="list-group-item text-danger">No fines found.</li>`;
+            }
+        } catch (err) {
+            console.error(err);
+            residentList.innerHTML = `<li class="list-group-item text-danger">Failed to load data.</li>`;
+        }
+    }
+
+    // Handle fine form submit
+    document.getElementById("fineForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const data = {
+            fine_id: parseInt(form.fine_id.value),
+            payable_amount: parseFloat(form.payable_amount.value),
+            payment_method: "Null",
+            created_by: parseInt(form.created_by.value) || localStorage.getItem('auth-id'),
+            payment_remarks: form.payment_remarks.value
+        };
+
+        try {
+            const res = await fetch("/api/accountant/set-fine-amount", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    'token': localStorage.getItem('token'),
+                    'auth-id': localStorage.getItem('auth-id')
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await res.json();
+            console.log('fine update'.result);
+            if (result.success) {
+                alert("Fine submitted successfully.");
+                form.reset();
+                fineModal.hide();
+                await loadFineDetails(); // Refresh data
+            } else {
+                alert("Error: " + (result.message || "Submission failed."));
+            }
+        } catch (err) {
+            console.error(err);
+            alert("An unexpected error occurred.");
+        }
+    });
+
+     // Initial load
+     await loadFineDetails();
+});
+</script>
+@endsection
