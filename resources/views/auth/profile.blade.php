@@ -4,8 +4,10 @@
         'admin' => 'admin.layout',
         'resident' => 'resident.layout',
         'accountant' => 'accountant.layout',
+        'admission' => 'admission.layout',
         'warden' => 'warden.layout',
         'admission' => 'admission.layout',
+        'guest' => 'guest.layout',
     ];
     $layout = $layouts[$role] ?? 'backend.layouts.app'; // fallback
 @endphp

@@ -59,7 +59,7 @@
                 <div class="top-breadcrumbs d-flex justify-content-between align-items-center">
                     <div class="breadcrumbs p-0"><a class="p-0">Faculties List</a></div>
                     <!-- <button class="add-btn" type="button" data-bs-toggle="modal" data-bs-target="#Faculty">+ Add
-                                                                                                                                    Faculty</button> -->
+                                                                                                                                                                    Faculty</button> -->
                     <button class="btn btn-primary btn-sm" onclick="FacultyModal.openCreate()">
                         <i class="fa fa-plus"></i> Add Faculty
                     </button>
@@ -73,7 +73,7 @@
                                 <th>#</th>
                                 <th>University</th>
                                 <th>Faculty Name</th>
-                                <th>Code</th>
+                                {{-- <th>Code</th> --}}
                                 <th>Status</th>
                                 <th width="180">Action</th>
                             </tr>
@@ -643,7 +643,8 @@
     </script>
 @endpush --}}
 
-    @push('scripts')
+    {{-- // Client Side Script --}}
+    {{-- @push('scripts')
         <script>
             const API_TOKEN = localStorage.getItem('token');
 
@@ -717,11 +718,11 @@
                                 data: 'name',
                                 title: 'Faculty Name'
                             },
-                            {
-                                data: 'code',
-                                title: 'Code',
-                                defaultContent: ''
-                            },
+                            // {
+                            //     data: 'code',
+                            //     title: 'Code',
+                            //     defaultContent: ''
+                            // },
                             {
                                 data: 'status',
                                 title: 'Status',
@@ -849,7 +850,7 @@
                             const d = res.data;
                             $('#faculty_id').val(d.id);
                             $('#name').val(d.name);
-                            $('#code').val(d.code ?? '');
+                            // $('#code').val(d.code ?? '');
                             UniversitySelect.load(d.university_id);
                             $('#status').val(d.status);
                             $('#facultyModal').modal('show');
@@ -872,7 +873,7 @@
                             const d = res.data;
                             $('#faculty_id').val(d.id);
                             $('#name').val(d.name);
-                            $('#code').val(d.code ?? '');
+                            // $('#code').val(d.code ?? '');
                             UniversitySelect.load(d.university_id);
                             $('#status').val(d.status);
                             $('#facultyModal').modal('show');
@@ -1013,4 +1014,441 @@
                 }
             };
         </script>
-    @endpush
+    @endpush --}}
+
+    {{-- @push('scripts')
+        <script>
+            /* ==========================================================
+             * GLOBAL AJAX SETUP
+             * ========================================================== */
+            $.ajaxSetup({
+                headers: {
+                    'Authorization': localStorage.getItem('token') ?
+                        'Bearer ' + localStorage.getItem('token') : '',
+                    'Accept': 'application/json'
+                }
+            });
+
+            /* ==========================================================
+             * FACULTY DATATABLE (SERVER SIDE)
+             * ========================================================== */
+            let facultyTable;
+
+            $(document).ready(function() {
+
+                facultyTable = $('#facultyTable').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    searching: true,
+                    ordering: true,
+                    responsive: {
+                        details: {
+                            type: 'column',
+                            target: 0
+                        }
+                    },
+
+                    ajax: {
+                        url: "{{ route('faculties.index') }}",
+                        type: "GET"
+                    },
+
+                    columns: [{
+                            data: null,
+                            defaultContent: '',
+                            className: 'dtr-control',
+                            orderable: false,
+                            searchable: false
+                        },
+                        {
+                            data: null,
+                            orderable: false,
+                            searchable: false,
+                            render: function(data, type, row, meta) {
+                                return meta.settings._iDisplayStart + meta.row + 1;
+                            }
+                        },
+                        {
+                            data: 'university',
+                            defaultContent: '<span class="text-muted">N/A</span>'
+                        },
+                        {
+                            data: 'name'
+                        },
+                        {
+                            data: 'status',
+                            render: function(s) {
+                                return s == 1 ?
+                                    '<span class="badge bg-success">Active</span>' :
+                                    '<span class="badge bg-danger">Inactive</span>';
+                            }
+                        },
+                        {
+                            data: 'id',
+                            orderable: false,
+                            searchable: false,
+                            render: function(id) {
+                                return `
+                        <button class="btn btn-sm btn-info" onclick="editFaculty(${id})">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFaculty(${id})">Delete</button>
+                    `;
+                            }
+                        }
+                    ],
+
+                    order: [
+                        [1, 'desc']
+                    ]
+                });
+            });
+
+            /* ==========================================================
+             * ACTIONS
+             * ========================================================== */
+            function editFaculty(id) {
+                alert('Edit faculty ID: ' + id);
+            }
+
+            function deleteFaculty(id) {
+                if (!confirm('Are you sure?')) return;
+
+                $.ajax({
+                    url: "{{ route('faculties.destroy', ':id') }}".replace(':id', id),
+                    type: 'DELETE',
+                    success: function() {
+                        facultyTable.ajax.reload(null, false);
+                    }
+                });
+            }
+        </script>
+    @endpush --}}
+@push('scripts')
+<script>
+/* ======================================================
+ | GLOBAL AJAX SETUP
+ ====================================================== */
+const API_TOKEN = localStorage.getItem('token');
+
+$.ajaxSetup({
+    headers: {
+        'Authorization': API_TOKEN ? `Bearer ${API_TOKEN}` : '',
+        'Accept': 'application/json'
+    }
+});
+
+/* ======================================================
+ | GLOBAL STATE
+ ====================================================== */
+let facultyTable = null;
+let UNIVERSITY_CACHE = [];
+
+/* ======================================================
+ | INIT
+ ====================================================== */
+$(document).ready(function () {
+    FacultyTable.init();
+    FacultyForm.init();
+});
+
+/* ======================================================
+ | DATATABLE MODULE (SERVER-SIDE)
+ ====================================================== */
+const FacultyTable = {
+
+    init() {
+
+        if ($.fn.DataTable.isDataTable('#facultyTable')) {
+            facultyTable.destroy();
+            $('#facultyTable').empty();
+        }
+
+        facultyTable = $('#facultyTable').DataTable({
+            processing: true,
+            serverSide: true,
+            autoWidth: false,
+            searching: true,
+            ordering: true,
+
+            responsive: {
+                details: {
+                    type: 'column',
+                    target: 0
+                }
+            },
+
+            ajax: {
+                url: "{{ route('faculties.index') }}",
+                type: "GET",
+                dataSrc: function (json) {
+
+                    // Cache universities ONCE
+                    if (json.meta && json.meta.universities) {
+                        UNIVERSITY_CACHE = json.meta.universities;
+                    }
+
+                    return json.data;
+                }
+            },
+
+            columns: [
+                {
+                    data: null,
+                    className: 'dtr-control',
+                    orderable: false,
+                    searchable: false,
+                    width: '1%'
+                },
+                {
+                    data: null,
+                    title: '#',
+                    orderable: false,
+                    searchable: false,
+                    width: '1%',
+                    render: function (data, type, row, meta) {
+                        return meta.settings._iDisplayStart + meta.row + 1;
+                    }
+                },
+                {
+                    data: 'university',
+                    title: 'University',
+                    defaultContent: '<span class="text-muted">N/A</span>'
+                },
+                {
+                    data: 'name',
+                    title: 'Faculty Name'
+                },
+                {
+                    data: 'status',
+                    title: 'Status',
+                    render: function (s) {
+                        return s === 1
+                            ? '<span class="badge bg-success">Active</span>'
+                            : '<span class="badge bg-danger">Inactive</span>';
+                    }
+                },
+                {
+                    data: 'id',
+                    title: 'Actions',
+                    orderable: false,
+                    searchable: false,
+                    className: 'text-nowrap',
+                    render: function (id) {
+                        return `
+                            <button class="btn btn-sm btn-info" onclick="FacultyModal.openEdit(${id})">Edit</button>
+                            <button class="btn btn-sm btn-primary" onclick="FacultyModal.openView(${id})">View</button>
+                            <button class="btn btn-sm btn-danger" onclick="FacultyModal.delete(${id})">Delete</button>
+                        `;
+                    }
+                }
+            ],
+
+            order: [[1, 'desc']],
+
+            dom: `
+                <'row mb-2'
+                    <'col-md-3'l>
+                    <'col-md-5 text-center'B>
+                    <'col-md-4'f>
+                >
+                <'row'<'col-12'tr>>
+                <'row mt-2'
+                    <'col-md-5'i>
+                    <'col-md-7'p>
+                >
+            `,
+
+            buttons: [
+                { extend: 'copy', className: 'btn btn-sm btn-outline-primary me-1' },
+                { extend: 'csv', className: 'btn btn-sm btn-outline-success me-1' },
+                { extend: 'excel', className: 'btn btn-sm btn-outline-info me-1' },
+                { extend: 'pdfHtml5', className: 'btn btn-sm btn-outline-danger me-1' },
+                { extend: 'print', className: 'btn btn-sm btn-outline-secondary' }
+            ],
+
+            drawCallback: function () {
+                if (this.responsive) this.responsive.recalc();
+            }
+        });
+    },
+
+    reload() {
+        if (facultyTable) {
+            facultyTable.ajax.reload(null, false);
+        }
+    }
+};
+
+/* ======================================================
+ | UNIVERSITY SELECT HELPER
+ ====================================================== */
+const UniversitySelect = {
+    load(selectedId = null) {
+
+        let options = '<option value="">Select University</option>';
+
+        if (!UNIVERSITY_CACHE.length) {
+            options += '<option value="">No universities available</option>';
+        } else {
+            UNIVERSITY_CACHE.forEach(u => {
+                options += `
+                    <option value="${u.id}" ${u.id == selectedId ? 'selected' : ''}>
+                        ${u.name}
+                    </option>`;
+            });
+        }
+
+        $('#university_id').html(options);
+    }
+};
+
+/* ======================================================
+ | MODAL HANDLER
+ ====================================================== */
+const FacultyModal = {
+
+    setMode(mode) {
+        const viewOnly = mode === 'view';
+
+        $('#facultyForm input, #facultyForm select')
+            .prop('readonly', viewOnly)
+            .prop('disabled', viewOnly);
+
+        $('#facultySubmitBtn').toggle(!viewOnly);
+
+        $('#facultyModalTitle').text({
+            add: 'Add Faculty',
+            edit: 'Edit Faculty',
+            view: 'View Faculty'
+        }[mode]);
+    },
+
+    openCreate() {
+        FacultyForm.reset();
+        this.setMode('add');
+        UniversitySelect.load();
+        $('#facultyModal').modal('show');
+    },
+
+    openEdit(id) {
+        this.loadAndOpen(id, 'edit');
+    },
+
+    openView(id) {
+        this.loadAndOpen(id, 'view');
+    },
+
+    loadAndOpen(id, mode) {
+        FacultyForm.reset();
+        this.setMode(mode);
+
+        $.get("{{ route('faculties.show', ':id') }}".replace(':id', id))
+            .done(res => {
+                const d = res.data;
+                $('#faculty_id').val(d.id);
+                $('#name').val(d.name);
+                $('#status').val(d.status);
+                UniversitySelect.load(d.university_id);
+                $('#facultyModal').modal('show');
+            })
+            .fail(() => Swal.fire('Error', 'Unable to load faculty', 'error'));
+    },
+
+    delete(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'This action cannot be undone',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url: "{{ route('faculties.destroy', ':id') }}".replace(':id', id),
+                type: 'DELETE'
+            }).done(() => {
+                Swal.fire('Deleted!', 'Faculty removed successfully', 'success');
+                FacultyTable.reload();
+            });
+        });
+    }
+};
+
+/* ======================================================
+ | FORM HANDLER
+ ====================================================== */
+const FacultyForm = {
+
+    init() {
+        $('#facultyForm').on('submit', this.submit.bind(this));
+    },
+
+    submit(e) {
+        e.preventDefault();
+        if (!this.validate()) return;
+
+        const id  = $('#faculty_id').val();
+        const url = id
+            ? "{{ route('faculties.update', ':id') }}".replace(':id', id)
+            : "{{ route('faculties.store') }}";
+
+        const formData = new FormData($('#facultyForm')[0]);
+        if (id) formData.append('_method', 'PUT');
+
+        $.ajax({
+            url,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false
+        }).done(res => {
+            Swal.fire('Success', res.message, 'success');
+            $('#facultyModal').modal('hide');
+            FacultyTable.reload();
+        }).fail(xhr => this.handleError(xhr));
+    },
+
+    validate() {
+        this.clearErrors();
+        let valid = true;
+
+        $('#facultyForm [required]').each((_, el) => {
+            const $el = $(el);
+            if (!$el.val()) {
+                this.error($el.attr('name'), 'This field is required');
+                valid = false;
+            }
+        });
+
+        return valid;
+    },
+
+    handleError(xhr) {
+        if (xhr.status === 422) {
+            Object.entries(xhr.responseJSON.errors).forEach(([f, m]) => {
+                this.error(f, m[0]);
+            });
+        } else {
+            Swal.fire('Error', 'Something went wrong', 'error');
+        }
+    },
+
+    error(field, message) {
+        const $f = $(`[name="${field}"]`);
+        $f.addClass('is-invalid');
+        $(`#${field}_error`).text(message).show();
+    },
+
+    clearErrors() {
+        $('#facultyForm .is-invalid').removeClass('is-invalid');
+        $('#facultyForm .invalid-feedback').hide().text('');
+    },
+
+    reset() {
+        $('#facultyForm')[0].reset();
+        $('#faculty_id').val('');
+        this.clearErrors();
+    }
+};
+</script>
+@endpush

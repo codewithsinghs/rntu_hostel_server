@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
+use App\Services\Billing\SubscriptionBillingService;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Console\Commands\SendPaymentDueNotifications; // Import your custom command
 
@@ -33,6 +34,17 @@ class Kernel extends ConsoleKernel
 
         // You might also run other scheduled tasks here, for example:
         // $schedule->command('inspire')->hourly();
+
+        $schedule->command('subscriptions:generate')->daily();
+
+        // $schedule->call(function () {
+        //     app(SubscriptionBillingService::class)->run();
+        // })->dailyAt('02:00');
+
+        $schedule->command('billing:generate-invoices')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /**
@@ -42,9 +54,8 @@ class Kernel extends ConsoleKernel
      */
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands'); // Loads commands from the 'Commands' directory.
+        $this->load(__DIR__ . '/Commands'); // Loads commands from the 'Commands' directory.
 
         require base_path('routes/console.php'); // Includes console routes.
     }
 }
-

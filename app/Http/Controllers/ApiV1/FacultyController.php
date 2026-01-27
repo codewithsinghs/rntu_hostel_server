@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ApiV1;
 
 use Throwable;
 use App\Models\Faculty;
+use App\Models\University;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -25,17 +26,136 @@ class FacultyController extends Controller
     /* =====================================================
      * INDEX : List Faculties (WEB + AJAX + API)
      * ===================================================== */
+    // public function index(Request $request)
+    // {
+    //     try {
+    //         // $faculties = Faculty::orderBy('id', 'desc')->get();
+    //         // $faculties = Faculty::with('university:id,name')->latest()->get();
+
+    //         $query = Faculty::with('university:id,name')
+    //             ->select('id', 'name', 'status', 'university_id', 'created_at')
+    //             ->latest();
+
+    //         // 🔐 University-based restriction (future-ready)
+    //         if (
+    //             auth()->check() &&
+    //             auth()->user()->university_id &&
+    //             !auth()->user()->is_super_admin
+    //         ) {
+    //             $query->where('university_id', auth()->user()->university_id);
+    //         }
+
+    //         $faculties = $query->get();
+
+    //         // 🔑 Fetch universities ONLY ONCE (minimal fields)
+    //         // $universities = \App\Models\University::query()
+    //         //     ->select('id', 'name')
+    //         //     ->where('status', 1)
+    //         //     ->orderBy('name')
+    //         //     ->get();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Universities: ROLE BASED
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         // Log::info('Determining'. auth()->user()->university_id);
+    //         if (
+    //             auth()->check() &&
+    //             auth()->user()->university_id &&
+    //             !auth()->user()->is_super_admin
+    //         ) {
+    //             // Log::info('Fetching universities for admin user');
+    //             // Admin → ONLY their university
+    //             $universities = \App\Models\University::query()
+    //                 ->select('id', 'name')
+    //                 ->where('id', auth()->user()->university_id)
+    //                 ->where('status', 1)
+    //                 ->get();
+    //         } else {
+    //             // Log::info('Fetching universities for user');
+    //             // Super admin → ALL universities
+    //             $universities = \App\Models\University::query()
+    //                 ->select('id', 'name')
+    //                 ->where('status', 1)
+    //                 ->orderBy('name')
+    //                 ->get();
+    //         }
+
+    //         // if ($request->expectsJson()) {
+    //         //     return $faculties->isEmpty()
+    //         //         ? $this->success('No faculty records found', [])
+    //         //         : $this->success('Faculty list fetched successfully', $faculties);
+    //         // }
+
+    //         if ($request->expectsJson()) {
+
+    //             return $this->success(
+    //                 $faculties->isEmpty()
+    //                     ? 'No faculty records found'
+    //                     : 'Faculty list fetched successfully',
+    //                 [
+    //                     'faculties'    => $faculties,
+    //                     'universities' => $universities
+    //                 ]
+    //             );
+    //         }
+
+    //         return view('faculties.index', compact('faculties'));
+    //     } catch (Throwable $e) {
+    //         Log::error('Faculty Index Error', ['exception' => $e]);
+
+    //         return $this->handleWebOrApiError(
+    //             $request,
+    //             'Unable to load faculties',
+    //             500
+    //         );
+    //     }
+    // }
+
     public function index(Request $request)
     {
+        // Page load
+        if (!$request->ajax()) {
+            return view('faculties.index');
+        }
+
         try {
-            // $faculties = Faculty::orderBy('id', 'desc')->get();
-            // $faculties = Faculty::with('university:id,name')->latest()->get();
 
-            $query = Faculty::with('university:id,name')
-                ->select('id', 'name', 'code', 'status', 'university_id', 'created_at')
-                ->latest();
+            /*
+        |--------------------------------------------------------------------------
+        | Accessible Universities (ONCE)
+        |--------------------------------------------------------------------------
+        */
+            if (
+                auth()->check() &&
+                auth()->user()->university_id &&
+                !auth()->user()->is_super_admin
+            ) {
+                // University Admin → Only their university
+                $universities = \App\Models\University::query()
+                    ->select('id', 'name')
+                    ->where('id', auth()->user()->university_id)
+                    ->where('status', 1)
+                    ->get();
+            } else {
+                // Super Admin → All universities
+                $universities = \App\Models\University::query()
+                    ->select('id', 'name')
+                    ->where('status', 1)
+                    ->orderBy('name')
+                    ->get();
+            }
 
-            // 🔐 University-based restriction (future-ready)
+            /*
+        |--------------------------------------------------------------------------
+        | Faculty Query
+        |--------------------------------------------------------------------------
+        */
+            $query = Faculty::query()
+                ->with('university:id,name')
+                ->select('id', 'name', 'status', 'university_id', 'created_at');
+
             if (
                 auth()->check() &&
                 auth()->user()->university_id &&
@@ -44,70 +164,104 @@ class FacultyController extends Controller
                 $query->where('university_id', auth()->user()->university_id);
             }
 
-            $faculties = $query->get();
-
-            // 🔑 Fetch universities ONLY ONCE (minimal fields)
-            // $universities = \App\Models\University::query()
-            //     ->select('id', 'name')
-            //     ->where('status', 1)
-            //     ->orderBy('name')
-            //     ->get();
+            $facultySummary = [
+                'total'    => (clone $query)->count(),
+                'active'   => (clone $query)->where('status', 1)->count(),
+                'inactive' => (clone $query)->where('status', 0)->count(),
+            ];
 
             /*
         |--------------------------------------------------------------------------
-        | Universities: ROLE BASED
+        | Counts
         |--------------------------------------------------------------------------
         */
-            if (
-                auth()->check() &&
-                auth()->user()->university_id &&
-                !auth()->user()->is_super_admin
-            ) {
-                // Admin → ONLY their university
-                $universities = \App\Models\University::query()
-                    ->select('id', 'name')
-                    ->where('id', auth()->user()->university_id)
-                    ->where('status', 1)
-                    ->get();
-            } else {
-                // Super admin → ALL universities
-                $universities = \App\Models\University::query()
-                    ->select('id', 'name')
-                    ->where('status', 1)
-                    ->orderBy('name')
-                    ->get();
+            $recordsTotal = (clone $query)->count();
+
+            /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        */
+            if ($search = $request->input('search.value')) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhereHas(
+                            'university',
+                            fn($uq) =>
+                            $uq->where('name', 'like', "%{$search}%")
+                        );
+                });
             }
 
-            // if ($request->expectsJson()) {
-            //     return $faculties->isEmpty()
-            //         ? $this->success('No faculty records found', [])
-            //         : $this->success('Faculty list fetched successfully', $faculties);
-            // }
+            $recordsFiltered = (clone $query)->count();
 
-            if ($request->expectsJson()) {
+            /*
+        |--------------------------------------------------------------------------
+        | Ordering
+        |--------------------------------------------------------------------------
+        */
+            $columns = [
+                0 => 'id',
+                1 => 'name',
+                2 => 'status',
+                3 => 'created_at',
+            ];
 
-                return $this->success(
-                    $faculties->isEmpty()
-                        ? 'No faculty records found'
-                        : 'Faculty list fetched successfully',
-                    [
-                        'faculties'    => $faculties,
-                        'universities' => $universities
-                    ]
-                );
-            }
+            $orderColumn = $columns[$request->input('order.0.column')] ?? 'id';
+            $orderDir    = $request->input('order.0.dir', 'desc');
 
-            return view('faculties.index', compact('faculties'));
-        } catch (Throwable $e) {
-            Log::error('Faculty Index Error', ['exception' => $e]);
+            /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+            $faculties = $query
+                ->orderBy($orderColumn, $orderDir)
+                ->skip($request->start)
+                ->take($request->length)
+                ->get()
+                ->map(fn($faculty) => [
+                    'id'         => $faculty->id,
+                    'name'       => $faculty->name,
+                    'university' => optional($faculty->university)->name,
+                    'status'     => (int) $faculty->status,
+                    'created_at' => $faculty->created_at->format('d-m-Y'),
+                ]);
 
-            return $this->handleWebOrApiError(
-                $request,
-                'Unable to load faculties',
-                500
-            );
+            /*
+        |--------------------------------------------------------------------------
+        | FINAL RESPONSE
+        |--------------------------------------------------------------------------
+        */
+            return response()->json([
+                // DataTables required
+                'draw'            => (int) $request->draw,
+                'recordsTotal'    => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data'            => $faculties,
+
+                // Extra payload (SAFE)
+                'meta' => [
+                    'universities' => $universities,
+                    'summary'      => $facultySummary,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+
+            Log::error('Faculty DataTable Error', ['exception' => $e]);
+
+            return response()->json([
+                'draw'            => (int) $request->draw,
+                'recordsTotal'    => 0,
+                'recordsFiltered' => 0,
+                'data'            => [],
+                'meta'            => ['universities' => []],
+            ], 500);
         }
     }
+
+
+
 
     /* =====================================================
      * STORE : Create Faculty

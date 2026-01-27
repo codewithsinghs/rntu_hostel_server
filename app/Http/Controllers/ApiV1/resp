@@ -1,0 +1,346 @@
+/**
+ * Display a single leave application with all necessary details
+ */
+public function show(Request $request, $id)
+{
+    try {
+        $user = $request->user();
+        
+        // Eager load all necessary relationships in one query
+        $leave = Leave::with([
+            'resident:id,user_id,name,scholar_no,phone,emergency_contact,blood_group',
+            'resident.user:id,email,phone,building_id,room_number,bed_number',
+            'resident.user.building:id,name,address',
+            'approverHod:id,name,email', // Assuming you have this relationship
+            'approverAdmin:id,name,email', // Assuming you have this relationship
+            'attachments:id,leave_id,file_path,original_name,created_at', // If you have attachments
+        ])
+        ->visibleFor($user)
+        ->findOrFail($id);
+        
+        // Check additional permissions if needed
+        if (!$this->canViewLeave($user, $leave)) {
+            abort(403, 'You are not authorized to view this leave application.');
+        }
+        
+        // Format the response based on request type
+        if ($request->expectsJson() || $request->ajax()) {
+            return $this->formatLeaveResponse($leave);
+        }
+        
+        // For web view, pass data to view
+        return view('backend.admin.leaves.show', [
+            'leave' => $leave,
+            'canApprove' => $this->canApproveLeave($user, $leave),
+            'canEdit' => $this->canEditLeave($user, $leave),
+            'canCancel' => $this->canCancelLeave($user, $leave),
+        ]);
+        
+    } catch (ModelNotFoundException $e) {
+        \Log::warning('Leave not found', [
+            'user_id' => optional($user)->id,
+            'leave_id' => $id,
+        ]);
+        
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => 'Leave application not found.',
+                'error' => 'NOT_FOUND'
+            ], 404);
+        }
+        
+        return back()->with('error', 'Leave application not found.');
+        
+    } catch (\Throwable $e) {
+        \Log::error('Leave Show Error', [
+            'user_id' => optional($user)->id,
+            'leave_id' => $id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => 'Unable to load leave application details.',
+                'error' => 'SERVER_ERROR'
+            ], 500);
+        }
+        
+        return back()->with('error', 'Unable to load leave application details.');
+    }
+}
+
+/**
+ * Format leave data for API response with only required fields
+ */
+private function formatLeaveResponse(Leave $leave)
+{
+    // Helper to format dates consistently
+    $formatDate = function ($date, $includeTime = false) {
+        if (!$date) return null;
+        
+        $carbon = \Carbon\Carbon::parse($date)->timezone('Asia/Kolkata');
+        
+        return $includeTime 
+            ? $carbon->format('d M Y, h:i A')
+            : $carbon->format('d M Y');
+    };
+    
+    // Calculate duration in days
+    $duration = $leave->start_date && $leave->end_date 
+        ? \Carbon\Carbon::parse($leave->start_date)
+            ->diffInDays(\Carbon\Carbon::parse($leave->end_date)) + 1
+        : null;
+    
+    return [
+        'id' => $leave->id,
+        'type' => $leave->type,
+        'type_formatted' => ucfirst($leave->type),
+        'status' => $leave->status,
+        'status_formatted' => $this->getStatusLabel($leave->status),
+        
+        // Leave dates
+        'start_date' => $formatDate($leave->start_date),
+        'start_date_raw' => $leave->start_date,
+        'end_date' => $formatDate($leave->end_date),
+        'end_date_raw' => $leave->end_date,
+        'duration_days' => $duration,
+        
+        // Application details
+        'reason' => $leave->reason,
+        'attachment' => $leave->attachment,
+        'applied_at' => $formatDate($leave->created_at, true),
+        'applied_at_raw' => $leave->created_at,
+        
+        // HOD approval details
+        'hod_approval' => $leave->hod_status ? [
+            'status' => $leave->hod_status,
+            'status_formatted' => $this->getApprovalStatusLabel($leave->hod_status),
+            'remarks' => $leave->hod_remarks,
+            'action_at' => $formatDate($leave->hod_action_at, true),
+            'action_at_raw' => $leave->hod_action_at,
+            'approver' => $leave->approverHod ? [
+                'id' => $leave->approverHod->id,
+                'name' => $leave->approverHod->name,
+                'email' => $leave->approverHod->email,
+            ] : null,
+        ] : null,
+        
+        // Admin approval details
+        'admin_approval' => $leave->admin_status ? [
+            'status' => $leave->admin_status,
+            'status_formatted' => $this->getApprovalStatusLabel($leave->admin_status),
+            'remarks' => $leave->admin_remarks,
+            'action_at' => $formatDate($leave->admin_action_at, true),
+            'action_at_raw' => $leave->admin_action_at,
+            'approver' => $leave->approverAdmin ? [
+                'id' => $leave->approverAdmin->id,
+                'name' => $leave->approverAdmin->name,
+                'email' => $leave->approverAdmin->email,
+            ] : null,
+        ] : null,
+        
+        // Resident details
+        'resident' => [
+            'id' => $leave->resident->id,
+            'name' => $leave->resident->name,
+            'scholar_no' => $leave->resident->scholar_no,
+            'phone' => $leave->resident->phone,
+            'emergency_contact' => $leave->resident->emergency_contact,
+            'blood_group' => $leave->resident->blood_group,
+            'user' => [
+                'email' => $leave->resident->user->email,
+                'phone' => $leave->resident->user->phone,
+                'room_number' => $leave->resident->user->room_number,
+                'bed_number' => $leave->resident->user->bed_number,
+                'building' => $leave->resident->user->building ? [
+                    'id' => $leave->resident->user->building->id,
+                    'name' => $leave->resident->user->building->name,
+                    'address' => $leave->resident->user->building->address,
+                ] : null,
+            ],
+        ],
+        
+        // Attachments if any
+        'attachments' => $leave->attachments->map(function ($attachment) {
+            return [
+                'id' => $attachment->id,
+                'file_name' => $attachment->original_name,
+                'file_path' => asset('storage/' . $attachment->file_path),
+                'uploaded_at' => $attachment->created_at->timezone('Asia/Kolkata')->format('d M Y, h:i A'),
+            ];
+        }),
+        
+        // Metadata
+        'meta' => [
+            'can_approve' => $this->canApproveLeave(auth()->user(), $leave),
+            'can_edit' => $this->canEditLeave(auth()->user(), $leave),
+            'can_cancel' => $this->canCancelLeave(auth()->user(), $leave),
+            'current_status_flow' => $this->getStatusFlow($leave),
+            'next_possible_actions' => $this->getNextPossibleActions($leave),
+        ],
+    ];
+}
+
+/**
+ * Get status label with color
+ */
+private function getStatusLabel($status)
+{
+    $labels = [
+        'pending' => [
+            'label' => 'Pending',
+            'color' => 'warning',
+            'class' => 'badge bg-warning',
+        ],
+        'approved' => [
+            'label' => 'Approved',
+            'color' => 'success',
+            'class' => 'badge bg-success',
+        ],
+        'rejected' => [
+            'label' => 'Rejected',
+            'color' => 'danger',
+            'class' => 'badge bg-danger',
+        ],
+        'cancelled' => [
+            'label' => 'Cancelled',
+            'color' => 'secondary',
+            'class' => 'badge bg-secondary',
+        ],
+    ];
+    
+    return $labels[$status] ?? [
+        'label' => ucfirst($status),
+        'color' => 'info',
+        'class' => 'badge bg-info',
+    ];
+}
+
+/**
+ * Get approval status label
+ */
+private function getApprovalStatusLabel($status)
+{
+    $labels = [
+        'pending' => ['label' => 'Pending Review', 'color' => 'warning'],
+        'approved' => ['label' => 'Approved', 'color' => 'success'],
+        'rejected' => ['label' => 'Rejected', 'color' => 'danger'],
+        'revision_required' => ['label' => 'Revision Required', 'color' => 'info'],
+    ];
+    
+    return $labels[$status] ?? ['label' => ucfirst($status), 'color' => 'secondary'];
+}
+
+/**
+ * Check if user can view the leave
+ */
+private function canViewLeave($user, $leave)
+{
+    // Implement your permission logic
+    // Example:
+    $roles = $user->getRoleNames();
+    
+    if (in_array('super_admin', $roles->toArray())) {
+        return true;
+    }
+    
+    if (in_array('admin', $roles->toArray())) {
+        return true;
+    }
+    
+    if (in_array('hod', $roles->toArray())) {
+        // HOD can view leaves from their department
+        return $leave->resident->user->building_id === $user->building_id;
+    }
+    
+    // Resident can view their own leaves
+    if (in_array('resident', $roles->toArray())) {
+        return $leave->resident_id === $user->resident->id;
+    }
+    
+    return false;
+}
+
+/**
+ * Check if user can approve the leave
+ */
+private function canApproveLeave($user, $leave)
+{
+    $roles = $user->getRoleNames();
+    
+    // Can only approve if status is pending
+    if ($leave->status !== 'pending') {
+        return false;
+    }
+    
+    // HOD can approve if not yet approved by HOD
+    if (in_array('hod', $roles->toArray()) && !$leave->hod_status) {
+        return $leave->resident->user->building_id === $user->building_id;
+    }
+    
+    // Admin can approve if HOD has approved
+    if (in_array('admin', $roles->toArray()) && $leave->hod_status === 'approved') {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Get current status flow
+ */
+private function getStatusFlow($leave)
+{
+    return [
+        'applied' => [
+            'status' => true,
+            'date' => $leave->created_at->format('d M Y'),
+            'label' => 'Applied',
+        ],
+        'hod_review' => [
+            'status' => $leave->hod_status === 'approved',
+            'date' => $leave->hod_action_at ? \Carbon\Carbon::parse($leave->hod_action_at)->format('d M Y') : null,
+            'label' => 'HOD Review',
+            'current_status' => $leave->hod_status,
+        ],
+        'admin_review' => [
+            'status' => $leave->admin_status === 'approved',
+            'date' => $leave->admin_action_at ? \Carbon\Carbon::parse($leave->admin_action_at)->format('d M Y') : null,
+            'label' => 'Admin Review',
+            'current_status' => $leave->admin_status,
+        ],
+        'completed' => [
+            'status' => $leave->status === 'approved',
+            'date' => $leave->status === 'approved' ? ($leave->admin_action_at ?: $leave->hod_action_at) : null,
+            'label' => 'Completed',
+        ],
+    ];
+}
+
+/**
+ * Get next possible actions for current user
+ */
+private function getNextPossibleActions($leave)
+{
+    $user = auth()->user();
+    $roles = $user->getRoleNames()->toArray();
+    $actions = [];
+    
+    if ($leave->status === 'pending') {
+        if (in_array('hod', $roles) && !$leave->hod_status) {
+            $actions = ['approve', 'reject', 'request_revision'];
+        }
+        
+        if (in_array('admin', $roles) && $leave->hod_status === 'approved') {
+            $actions = ['approve', 'reject', 'request_revision'];
+        }
+        
+        // Resident can cancel their own pending leave
+        if (in_array('resident', $roles) && $leave->resident_id === $user->resident?->id) {
+            $actions[] = 'cancel';
+        }
+    }
+    
+    return $actions;
+}

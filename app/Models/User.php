@@ -3,19 +3,19 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
-use Spatie\Permission\Models\Role;
 
 
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
-    
+    use HasApiTokens, SoftDeletes, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -23,6 +23,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = ['name', 'email', 'gender', 'password', 'university_id', 'building_id', 'department_id', 'status', 'created_by'];
+
 
     /**
      * The attributes that should be hidden for serialization.
@@ -53,7 +54,15 @@ class User extends Authenticatable
     {
         return $this->hasOne(Profile::class);
     }
-    
+
+    public function hasRoleNormalized(string $role): bool
+    {
+        return $this->getRoleNames()
+            ->map(fn($r) => strtolower($r))
+            ->contains(strtolower($role));
+    }
+
+
     public function staff()
     {
         return $this->belongsToMany(Role::class, 'model_has_roles', 'model_id', 'role_id')
@@ -74,7 +83,18 @@ class User extends Authenticatable
     public function building()
     {
         return $this->belongsTo(Building::class, 'building_id');
+        // return $this->hasMany(Building::class, 'university_id', 'university_id');
+
+        // For Building user
+        // return $this->belongsToMany(Building::class, 'building_user');
     }
+
+    public function hasLimitedHostelAccess(): bool
+    {
+        return $this->buildings()->exists();
+    }
+
+
     public function assignedFines()
     {
         return $this->hasMany(Fine::class, 'assigned_by_admin_id');

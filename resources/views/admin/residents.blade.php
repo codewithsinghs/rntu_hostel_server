@@ -4,7 +4,7 @@
 
     <!-- top-breadcrumbs -->
     <div class="top-breadcrumbs">
-        <div class="breadcrumbs"><a>Overview</a></div>
+        <div class="breadcrumbs"><a>Overvdiew</a></div>
     </div>
 
     <!-- Card -->
@@ -60,7 +60,7 @@
     <section class="common-con-tainer">
         <div class="common-content">
             <div class="common-overview">
-                <div class="breadcrumbs"><a>List of Residents</a></div>
+                <div class="breadcrumbs"><a>List of Residentss</a></div>
 
                 <div class="overflow-auto">
                     <div id="responseMessage" class="mt-3"></div>

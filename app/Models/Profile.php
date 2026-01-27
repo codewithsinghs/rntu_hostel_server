@@ -81,8 +81,11 @@ class Profile extends Model
 
     protected $casts = [
         'dob'            => 'date',
-        'check_in_date'   => 'date',
-        'check_out_date'   => 'date',
+
+        'check_in_date'  => 'datetime',
+        'check_out_date' => 'datetime',
+
+
         'is_hosteler'    => 'boolean',
         // ⭐ Treat JSON as array
         'others' => 'array',

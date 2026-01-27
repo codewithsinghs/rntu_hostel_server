@@ -14,6 +14,9 @@
     <!-- Favicon -->
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 
+    <!-- Select 2 Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
     <!-- Global Styles Bootstrap 5.2 -->
     {{-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"> --}}
     <!-- Bootstrap CSS Bootstrap 5.3 -->
@@ -26,6 +29,8 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/select/1.7.0/css/select.dataTables.min.css">
     <!-- 19122025  -->
 
     <!-- ✅ CSRF Token -->
@@ -40,6 +45,9 @@
     <!-- 19122025  -->
     <link rel="stylesheet" href="{{ asset('backend/fonts/stylesheet.css') }}" />
     <link rel="stylesheet" href="{{ asset('backend/css/popup&tabs.css') }}">
+    <!-- 24122025  date time Picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 
     <!-- Page-specific Styles -->
     @stack('styles')
@@ -318,6 +326,11 @@
     <script>
         $(function() {
             const token = localStorage.getItem("token");
+
+            if (!token) {
+                return; // STOP execution
+            }
+
             const currentPath = window.location.pathname;
 
             const dashboards = {
@@ -500,6 +513,51 @@
                     if (!localStorage.getItem("token")) redirectTo(fallbackRoute);
                 }
             };
+
+
+
+            // function forceLogout() {
+
+            //     const token = localStorage.getItem('access_token');
+
+            //     if (token) {
+            //         $.ajax({
+            //             url: "/api/logout",
+            //             method: "POST",
+            //             headers: {
+            //                 "Authorization": "Bearer " + token
+            //             },
+            //             complete: function() {
+            //                 clearSession();
+            //             }
+            //         });
+            //     } else {
+            //         clearSession();
+            //     }
+            // }
+
+            // function clearSession() {
+            //     localStorage.removeItem('access_token');
+            //     localStorage.removeItem('auth_type');
+            //     localStorage.removeItem('auth_id');
+            //     localStorage.removeItem('role');
+            //     localStorage.removeItem('profile');
+
+            //     window.location.href = "/login";
+            // }
+
+            // Bind logout button
+            // document.addEventListener('click', function(e) {
+
+            //     const logoutBtn = e.target.closest('.logoutBtn');
+            //     if (!logoutBtn) return;
+
+            //     e.preventDefault();
+            //     forceLogout();
+
+            // });
+
+
         });
     </script>
 
@@ -524,8 +582,24 @@
             }
         });
     </script>
+    
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        // Apply to all inputs with .datetime-picker
+        // flatpickr(".datetime-picker", {
+        const picker = flatpickr(".datetime-picker", {
+            enableTime: true,
+            // dateFormat: "d M Y h:i K", // → "01 Dec 2025 12:00 PM"
+            dateFormat: "Y-m-d\\TH:i",
+            altInput: true, // shows a pretty display
+            altFormat: "d M Y h:i K", // user-friendly format
+            allowInput: true // let users type manually too
+        });
+    </script>
     @stack('scripts')
+
+    
 
 </body>
 

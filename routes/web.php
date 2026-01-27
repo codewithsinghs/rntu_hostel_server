@@ -19,7 +19,8 @@ use App\Http\Controllers\{
     FineController,
     PaymentController,
     Auth\LoginController,
-    CheckoutController
+    CheckoutController,
+    ApiV1\PaytmCallbackController,
 };
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -92,15 +93,15 @@ Route::prefix('resident')->group(function () {
 Route::prefix('admin')->group(function () {
     Route::view('/dashboard', 'admin.admin')->name('admin.dashboard');
 
-    // Route::view('/faculties', 'backend.admin.faculties')->name('admin.faculties');
+    Route::view('/faculties', 'backend.admin.faculties')->name('admin.faculties');
     Route::view('/faculties/create', 'admin.create_faculties')->name('admin.create_faculties');
     Route::view('/faculties/edit/{id}', 'admin.edit_faculties')->name('admin.edit_faculties');
 
-    // Route::view('/departments', 'backend.admin.departments')->name('admin.departments');
+    Route::view('/departments', 'backend.admin.departments')->name('admin.departments');
     Route::view('/departments/create', 'admin.create_departments')->name('admin.create_departments');
     Route::view('/departments/edit/{id}', 'admin.edit_departments')->name('admin.edit_departments');
 
-    // Route::view('/courses', 'backend.admin.courses')->name('admin.courses');
+    Route::view('/courses', 'backend.admin.courses')->name('admin.courses');
     Route::view('/courses/create', 'admin.create_courses')->name('admin.create_courses');
     Route::view('/courses/edit/{id}', 'admin.edit_courses')->name('admin.edit_courses');
 
@@ -116,7 +117,7 @@ Route::prefix('admin')->group(function () {
     Route::view('/beds/create', 'admin.create_bed')->name('admin.create_bed');
     Route::view('/assignbed', 'admin.assignbed')->name('admin.assignbed');
 
-    // Route::view('/residents', 'admin.residents')->name('admin.residents');
+    Route::view('/residents', 'admin.residents')->name('admin.residents');
     Route::view('/leave-requests', 'admin.leave_requests')->name('admin.leave_requests');
     Route::view('/grievances', 'admin.grievances')->name('admin.grievances');
     Route::view('/room-change-requests', 'admin.room_change')->name('admin.room_change');
@@ -151,11 +152,18 @@ Route::prefix('admin')->group(function () {
     Route::get('/fine', [FineController::class, 'showFineAssignmentForm'])->name('admin.fine.form');
 
 
-    Route::view('/faculties', 'backend.admin.faculties')->name('admin.faculties');
-    Route::view('/departments', 'backend.admin.departments')->name('admin.departments');
-    Route::view('/courses', 'backend.admin.courses')->name('admin.courses');
+    // Route::view('/faculties', 'backend.admin.faculties')->name('admin.faculties');
+    // Route::view('/departments', 'backend.admin.departments')->name('admin.departments');
+    // Route::view('/courses', 'backend.admin.courses')->name('admin.courses');
 
-    Route::view('/residents', 'backend.admin.residents')->name('admin.residents');
+    // Route::view('/hostels', 'backend.admin.hostels')->name('admin.hostels');
+    // Route::view('/rooms', 'backend.admin.rooms')->name('admin.rooms');
+    // Route::view('/beds', 'backend.admin.beds')->name('admin.beds');
+
+
+    // Route::view('residents', 'backend.admin.residents')->name('admin.residents');
+
+    Route::view('leaves', 'backend.admin.leaves')->name('admin.leaves');
 });
 
 /*
@@ -225,6 +233,68 @@ Route::prefix('admin')->group(function () {
 //     Route::get('/fine', [FineController::class, 'showFineAssignmentForm'])->name('admin.fine.form');
 // });
 
+// Warden routes can be added 
+/*
+|--------------------------------------------------------------------------
+| Warden Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('warden')->group(function () {
+    Route::view('/dashboard', 'warden.admin')->name('warden.dashboard');
+    Route::view('/faculties', 'warden.faculties')->name('warden.faculties');
+    Route::view('/faculties/create', 'warden.create_faculties')->name('warden.create_faculties');
+    Route::view('/faculties/edit/{id}', 'warden.edit_faculties')->name('warden.edit_faculties');
+
+    Route::view('/departments', 'warden.departments')->name('warden.departments');
+    Route::view('/departments/create', 'warden.create_departments')->name('warden.create_departments');
+    Route::view('/departments/edit/{id}', 'warden.edit_departments')->name('warden.edit_departments');
+    Route::view('/courses', 'warden.courses')->name('warden.courses');
+    Route::view('/courses/create', 'warden.create_courses')->name('warden.create_courses');
+    Route::view('/courses/edit/{id}', 'warden.edit_courses')->name('warden.edit_courses');
+
+    Route::view('/buildings', 'warden.building')->name('warden.building');
+    Route::view('/buildings/create', 'warden.create_building')->name('warden.create_building');
+    Route::view('/buildings/edit/{id}', 'warden.edit_building')->name('warden.edit_building');
+    Route::view('/rooms', 'warden.rooms')->name('warden.rooms');
+    Route::view('/rooms/create', 'warden.create_rooms')->name('warden.create_rooms');
+    Route::view('/rooms/edit/{id}', 'warden.edit_rooms')->name('warden.edit_rooms');
+
+    Route::view('/beds', 'warden.beds')->name('warden.beds');
+    Route::view('/beds/create', 'warden.create_bed')->name('warden.create_bed');
+    Route::view('/assignbed', 'warden.assignbed')->name('warden.assignbed');
+    Route::view('/residents', 'warden.residents')->name('warden.residents');
+    Route::view('/leave-requests', 'warden.leave_requests')->name('warden.leave_requests');
+    Route::view('/grievances', 'warden.grievances')->name('warden.grievances');
+    Route::view('/room-change-requests', 'warden.room_change')->name('warden.room_change');
+    Route::view('/feedbacks', 'warden.feedback')->name('warden.feedbacks');
+    Route::view('/pending-guests', 'warden.pending_guest')->name('warden.guest.pending');
+    Route::view('/guests/paid', 'warden.paidguest')->name('warden.paid.guests');
+
+    Route::view('/pendingpayments', 'warden.pendingpayments')->name('warden.pendingpayments');
+    Route::view('/checkout', 'warden.checkout')->name('warden.checkout');
+
+    Route::view('/accessories', 'warden.accessory')->name('warden.accessories');
+    Route::view('/accessories/create', 'warden.create_accessory')->name('warden.create_accessory');
+
+    Route::view('/staff', 'warden.staff')->name('warden.staff');
+    Route::view('/staff/create', 'warden.create_staff')->name('warden.create_staff');
+    Route::view('/staff/edit/{id}', 'warden.edit_staff')->name('warden.edit_staff');
+    Route::view('/admin', 'warden.admin_list')->name('warden.admin_list');
+    Route::view('/admin/create', 'warden.create_admin')->name('warden.create_admin');
+    Route::view('/admin/edit/{id}', 'warden.edit_admin')->name('warden.edit_admin');
+
+    Route::view('/hods', 'warden.hods')->name('warden.hods');
+    Route::view('/hods/create', 'warden.create_hod')->name('warden.create_hod');
+    Route::view('/hods/edit/{id}', 'warden.edit_hod')->name('warden.edit_hod');
+    Route::view('/notices', 'warden.notices')->name('warden.notices');
+    Route::view('/notices/create', 'warden.create_notice')->name('warden.create_notice');
+
+    Route::view('/subscribe-resident', 'warden.subscribe_resident')->name('warden.subscribe_resident');
+    Route::view('/add-accessory', 'warden.addaccessories')->name('warden.adda_ccessories');
+
+    Route::view('/fine', 'warden.fine')->name('warden.fine');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Guest Routes
@@ -239,7 +309,8 @@ Route::prefix('guest')->group(function () {
     Route::view('/payment', 'guest.payment')->name('guest.payment');
     Route::view('/makepayment', 'guest.makepayment')->name('guest.makepayment');
     Route::view('/payment/reciept', 'guest.payment_reciept')->name('guest.payment.reciept');
-    Route::post('/payment/callback', [PaymentController::class, 'guestPayCallback'])->name('guest.payment.callback');
+    // Route::post('/payment/callback', [PaymentController::class, 'guestPayCallback'])->name('guest.payment.callback');
+    Route::post('/payment/callback', [PaytmCallbackController::class, 'guestPayCallback'])->name('guest.payment.callback');
 });
 
 /*
@@ -262,6 +333,9 @@ Route::prefix('accountant')->group(function () {
     Route::view('/resident-payments', 'accountant.residentpayment')->name('accountant.resident-payments');
     Route::get('/guests', [App\Http\Controllers\FeeExceptionController::class, 'showGuestManagement'])->name('accountant.guests');
     Route::get('/resident/accessory-pay', [PaymentController::class, 'showAccessoryPaymentForm'])->name('accountant.resident.accessory-pay');
+
+    Route::view('/residents', 'accountant.residents')->name('accountant.residents');
+    Route::view('/pendingpayments', 'accountant.pendingpayments')->name('accountant.pendingpayments');
 });
 
 /*
@@ -304,6 +378,73 @@ Route::view('backend/index', 'backend/index')->name('backend.index');
 Route::view('backend/pages', 'backend/pages')->name('backend.pages');
 
 
+
+
+// web.php
+// Route::group(['prefix' => '{role}', 'middleware' => ['auth']], function () {
+//     Route::view('/faculties', 'backend.admin.faculties')->name('faculties');
+//     Route::view('/departments', 'backend.admin.departments')->name('departments');
+//     Route::view('/courses', 'backend.admin.courses')->name('courses');
+//     Route::view('/hostels', 'backend.admin.hostels')->name('hostels');
+//     Route::view('/rooms', 'backend.admin.rooms')->name('rooms');
+//     Route::view('/beds', 'backend.admin.beds')->name('beds');
+// });
+
+// routes/web.php
+
+// Route::prefix('admin')->group(function () {
+//     Route::view('/faculties', 'backend.admin.faculties')->name('admin.faculties');
+//     Route::view('/departments', 'backend.admin.departments')->name('admin.departments');
+//     Route::view('/courses', 'backend.admin.courses')->name('admin.courses');
+
+//     Route::view('/hostels', 'backend.admin.hostels')->name('admin.hostels');
+//     Route::view('/rooms', 'backend.admin.rooms')->name('admin.rooms');
+//     Route::view('/beds', 'backend.admin.beds')->name('admin.beds');
+
+
+//     Route::view('residents', 'backend.admin.residents')->name('admin.residents');
+// });
+
+// Route::prefix('warden')->group(function () {
+//     Route::view('/faculties', 'backend.warden.faculties')->name('warden.faculties');
+//     Route::view('/departments', 'backend.warden.departments')->name('warden.departments');
+//     Route::view('/courses', 'backend.warden.courses')->name('warden.courses');
+
+//     Route::view('/hostels', 'backend.warden.hostels')->name('warden.hostels');
+//     Route::view('/rooms', 'backend.warden.rooms')->name('warden.rooms');
+//     Route::view('/beds', 'backend.warden.beds')->name('warden.beds');
+
+//     Route::view('residents', 'backend.warden.residents')->name('warden.residents');
+// });
+
+// Route::middleware(['auth'])->prefix('dashboard')->group(function () {
+
+//     Route::view('/faculties', 'backend.faculties.index')->name('faculties.index');
+//     Route::view('/departments', 'backend.departments.index')->name('departments.index');
+//     Route::view('/courses', 'backend.courses.index')->name('courses.index');
+
+//     Route::view('/hostels', 'backend.hostels.index')->name('hostels.index');
+//     Route::view('/rooms', 'backend.rooms.index')->name('rooms.index');
+//     Route::view('/beds', 'backend.beds.index')->name('beds.index');
+
+//     Route::view('/residents', 'backend.residents.index')->name('residents.index');
+// });
+
+
+// routes/web.php
+Route::middleware(['web'])->group(function () {
+    Route::view('/admin/{any?}', 'app')
+        ->where('any', '.*')
+        ->name('admin.app');
+
+    Route::view('/warden/{any?}', 'app')
+        ->where('any', '.*')
+        ->name('warden.app');
+
+    Route::view('/accountant/{any?}', 'app')
+        ->where('any', '.*')
+        ->name('accountant.app');
+});
 
 // Admin pages
 // Route::middleware(['api.auth:admin', 'role:admin'])->group(function () {

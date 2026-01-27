@@ -662,7 +662,7 @@ class GuestPaymentController extends Controller
         $order->invoices()->attach($pivotData);
     }
 
-    private function respondWithError( string $message,int $statusCode = 500, ?string $errorType = null,array $extra = [] ) 
+    private function respondWithError(string $message, int $statusCode = 500, ?string $errorType = null, array $extra = [])
     {
         Log::error('Payment error', array_merge([
             'type'    => $errorType,
@@ -1230,12 +1230,12 @@ class GuestPaymentController extends Controller
                 ];
             });
 
-            Log::alert($accessories);
+            // Log::alert($accessories);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $order = Order::with(['transactions', 'guest'])
+        $order = Order::with(['transactions'])
             ->where('order_number', $request->order_id)
             // ->where('guest_id', $guest->id) // ensure guest owns the order
             ->first();
@@ -1262,21 +1262,22 @@ class GuestPaymentController extends Controller
             'status'  => $order->status,
             'txn_id'  => $order->transaction->txn_id ?? $request->txnId,
             'amount'  => $order->transaction->txn_amount ?? $order->amount,
+            'txn_date' => Carbon::parse($order->transaction->created_at)->setTimezone('Asia/Kolkata')->format('d M Y, h:i A'),
             'order_id' => $order->order_number,
             'guest'   => [
-                'sc_n' => $order->guest->scholar_no ?? null,
-                'name'  => $order->guest->name ?? null,
-                'email' => $order->guest->email ?? null,
-                'number' => $order->guest->number ?? null,
-                'gender' => $order->guest->gender ?? null,
-                'fathers_name' => $order->guest->fathers_name ?? null,
-                'mothers_name' => $order->guest->mothers_name ?? null,
-                'parent_no' => $order->guest->parent_no ?? null,
-                'guardian_name' => $order->guest->local_guardian_name ?? null,
-                'guardian_no' => $order->guest->guardian_no ?? null,
-                'emergency_no' => $order->guest->emergency_no ?? null,
-                'stay_duration' => $order->guest->months ?? null,
-                'course' => $order->guest->course ?? null,
+                'sc_n' => $guest->scholar_no ?? null,
+                'name'  => $guest->name ?? null,
+                'email' => $guest->email ?? null,
+                'number' => $guest->number ?? null,
+                'gender' => $guest->gender ?? null,
+                'fathers_name' => $guest->fathers_name ?? null,
+                'mothers_name' => $guest->mothers_name ?? null,
+                'parent_no' => $guest->parent_no ?? null,
+                'guardian_name' => $guest->local_guardian_name ?? null,
+                'guardian_no' => $guest->guardian_no ?? null,
+                'emergency_no' => $guest->emergency_no ?? null,
+                'stay_duration' => $guest->months ?? null,
+                'course' => $guest->course ?? null,
 
             ],
             'accessories' => $accessories,

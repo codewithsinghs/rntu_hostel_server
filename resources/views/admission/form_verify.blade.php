@@ -1,7 +1,6 @@
 @extends('admission.layout')
 
 @section('head')
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -120,8 +119,8 @@
                     </div>
                     <div class="col-md-6">
                         <!-- <label for="waiver_document" class="form-label">Fee Waiver Document</label>
-                                            <input type="file" name="attachment" id="waiver_document" class="form-control">
-                                            <div id="waiverDocumentError" class="invalid-feedback"></div> -->
+                                                    <input type="file" name="attachment" id="waiver_document" class="form-control">
+                                                    <div id="waiverDocumentError" class="invalid-feedback"></div> -->
 
                         <div class="row">
                             <!-- This will take full width (like colspan="2") -->
@@ -214,19 +213,19 @@
 
                 <h5 class="bg-primary text-white p-2">Preferences</h5>
                 <!-- <div class="mb-3">
-                                        <label class="form-label">Food Preference *</label>
-                                        <div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="food_preference" id="food_veg" value="Veg" required>
-                                                <label class="form-check-label" for="food_veg">Veg</label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="food_preference" id="food_nonveg" value="Non-Veg">
-                                                <label class="form-check-label" for="food_nonveg">Non-Veg</label>
-                                            </div>
-                                        </div>
-                                        <div id="foodPreferenceError" class="invalid-feedback"></div>
-                                    </div> -->
+                                                <label class="form-label">Food Preference *</label>
+                                                <div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="radio" name="food_preference" id="food_veg" value="Veg" required>
+                                                        <label class="form-check-label" for="food_veg">Veg</label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="radio" name="food_preference" id="food_nonveg" value="Non-Veg">
+                                                        <label class="form-check-label" for="food_nonveg">Non-Veg</label>
+                                                    </div>
+                                                </div>
+                                                <div id="foodPreferenceError" class="invalid-feedback"></div>
+                                            </div> -->
 
                 <div class="mb-3">
                     <label class="form-label">Bed Preference *</label>
@@ -827,10 +826,14 @@
                             $.ajax({
                                 url: '/api/admin/departments?faculty_id=' + guest.faculty_id,
                                 type: 'GET',
+                                // headers: {
+                                //     'token': localStorage.getItem('token'),
+                                //      'auth-id': localStorage.getItem('auth-id'),
+                                //     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                                // },
                                 headers: {
-                                    'token': localStorage.getItem('token'),
-                                    'auth-id': localStorage.getItem('auth-id'),
-                                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                    'Accept': 'application/json'
                                 },
                                 success: function(response) {
                                     if (response.success && Array.isArray(response.data)) {
@@ -1019,9 +1022,9 @@
                     //     'auth-id': localStorage.getItem('auth-id')
                     // },
                     headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Accept': 'application/json'
-                },
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Accept': 'application/json'
+                    },
                     success: function(response) {
                         renderFeeBreakdown(response);
                     },

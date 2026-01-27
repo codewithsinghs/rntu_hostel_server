@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Resident;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Auth\User as Authenticatable; // ✅ this is important
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable; // ✅ this is important
 
 
 class Guest extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable; 
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -41,13 +42,13 @@ class Guest extends Authenticatable
         'token',
         'token_expiry',
     ];
-    
+
     protected $hidden = [
-    'updated_at',
-    'remember_token',
-    'token',
-    'token_expiry',
-    // add other sensitive or recursive fields
+        'updated_at',
+        'remember_token',
+        'token',
+        'token_expiry',
+        // add other sensitive or recursive fields
     ];
 
 
@@ -64,14 +65,14 @@ class Guest extends Authenticatable
 
     public function invoices()
     {
-        return $this->hasMany(Invoice::class,'guest_id');
+        return $this->hasMany(Invoice::class, 'guest_id');
     }
 
     // public function invoiceItems()
     // {
     //     return $this->hasManyThrough(InvoiceItem::class, Invoice::class);
     // }
-    
+
     public function invoiceItems()
     {
         return $this->hasManyThrough(
@@ -90,7 +91,7 @@ class Guest extends Authenticatable
             ->where('item_type', 'accessory')
             ->with('accessory.accessoryHead');
     }
- 
+
     public function feeException()
     {
         return $this->hasOne(FeeException::class);
@@ -109,4 +110,9 @@ class Guest extends Authenticatable
         return $this->belongsTo(Course::class, 'course_id');
     }
 
+
+    public function resident()
+    {
+        return $this->hasOne(Resident::class, 'guest_id');
+    }
 }

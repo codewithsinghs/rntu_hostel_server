@@ -1,7 +1,6 @@
 @extends('guest.layout')
 
 @section('content')
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -267,7 +266,8 @@
             </div>
         </div>
     </div>
-
+@endsection
+@push('scripts')
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const guestInput = document.getElementById("guest_id");
@@ -355,6 +355,7 @@
                 matchedAccessories) {
                 const accessoriesHtml = matchedAccessories.length > 0 ? `
             <h5 class="mt-3">Accessory Breakdown</h5>
+            <div class="table-responsive">
             <table class="table table-bordered">
                 <thead class="table-light">
                     <tr>
@@ -366,15 +367,16 @@
                 </thead>
                 <tbody>
                     ${matchedAccessories.map((acc, index) => `
-                            <tr>
-                                <td>${index + 1}</td>
-                                <td>${acc.accessory_head?.name || 'N/A'}</td>
-                                <td>₹${parseFloat(acc.price).toFixed(2)}</td>
-                                <td>₹${(parseFloat(acc.price) * numberOfMonths).toFixed(2)}</td>
-                            </tr>
-                        `).join('')}
+                                            <tr>
+                                                <td>${index + 1}</td>
+                                                <td>${acc.accessory_head?.name || 'N/A'}</td>
+                                                <td>₹${parseFloat(acc.price).toFixed(2)}</td>
+                                                <td>₹${(parseFloat(acc.price) * numberOfMonths).toFixed(2)}</td>
+                                            </tr>
+                                        `).join('')}
                 </tbody>
             </table>
+            </div>
             <div class="accessory-total text-start">Total Accessory Charges: ₹${accessoryAmount.toFixed(2)}</div>
         ` : `<p>No optional accessories selected for this guest.</p>`;
 
@@ -445,4 +447,4 @@
             });
         });
     </script>
-@endsection
+@endpush

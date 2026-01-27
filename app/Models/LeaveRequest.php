@@ -5,11 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class LeaveRequest extends Model {
+class LeaveRequest extends Model
+{
     use HasFactory;
 
     protected $fillable = [
-        'resident_id', 'from_date', 'to_date', 'reason', 'hod_status', 'admin_status'
+        'resident_id',
+        'from_date',
+        'to_date',
+        'reason',
+        'hod_status',
+        'admin_status'
     ];
 
     protected $hidden = [
@@ -19,8 +25,14 @@ class LeaveRequest extends Model {
     ];
 
     // Relationship with Resident
-    public function resident() {
-        return $this->belongsTo(Resident::class, 'resident_id', 'id');
+    public function resident()
+    {
+        // return $this->belongsTo(Resident::class, 'resident_id', 'id');
+        return $this->belongsTo(Resident::class);
+    }
+
+    public function scopeVisibleFor($query, $user)
+    {
+        return $query->whereHas('resident', fn($q) => $q->visibleFor($user));
     }
 }
-

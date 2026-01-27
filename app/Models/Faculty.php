@@ -14,7 +14,7 @@ class Faculty extends Model
     protected $fillable = [
         'university_id',
         'name',
-        'code',
+        // 'code',
         'status',
         'created_by',
         'updated_by'
@@ -69,33 +69,33 @@ class Faculty extends Model
     // }
 
 
-    protected static function booted()
-    {
-        static::creating(function ($faculty) {
+    // protected static function booted()
+    // {
+    //     static::creating(function ($faculty) {
 
-            // If code is already provided, don't override
-            if (! empty($faculty->code)) {
-                return;
-            }
+    //         // If code is already provided, don't override
+    //         if (! empty($faculty->code)) {
+    //             return;
+    //         }
 
-            // Generate prefix from name
-            $prefix = strtoupper(
-                substr(
-                    preg_replace('/[^A-Za-z]/', '', $faculty->name),
-                    0,
-                    3
-                )
-            );
+    //         // Generate prefix from name
+    //         $prefix = strtoupper(
+    //             substr(
+    //                 preg_replace('/[^A-Za-z]/', '', $faculty->name),
+    //                 0,
+    //                 3
+    //             )
+    //         );
 
-            // Fallback if name is too short
-            $prefix = $prefix ?: 'FAC';
+    //         // Fallback if name is too short
+    //         $prefix = $prefix ?: 'FAC';
 
-            // Generate unique numeric suffix
-            $lastId = self::max('id') + 1;
+    //         // Generate unique numeric suffix
+    //         $lastId = self::max('id') + 1;
 
-            $faculty->code = $prefix . str_pad($lastId, 4, '0', STR_PAD_LEFT);
-        });
-    }
+    //         $faculty->code = $prefix . str_pad($lastId, 4, '0', STR_PAD_LEFT);
+    //     });
+    // }
 
     // Relations
     public function university()

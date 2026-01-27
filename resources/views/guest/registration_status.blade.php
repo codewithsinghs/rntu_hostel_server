@@ -51,7 +51,7 @@
                         <form id="guest-login">
                             @csrf
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email address</label>
+                                <label for="email" class="form-label">Emaidl address</label>
                                 <input type="email" class="form-control" name="email" required>
                             </div>
 

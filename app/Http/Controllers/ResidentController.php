@@ -17,13 +17,14 @@ class ResidentController extends Controller
     public function getAllResidents(Request $request)
     {
         try {
-            $user = Helper::get_auth_admin_user($request);
+            $user = $request->user();
+            
             $residents = Resident::with(['user', 'bed.room.building', 'guest', 'creator', 'guest.faculty', 'guest.department', 'guest.course'])
                 ->whereHas('user', function ($q) use ($user) {
                     $q->where('university_id', $user->university_id);
                 })
                 ->get();
-                // Log::info('Residents: ' . $residents->first());
+                Log::info('Residents: ' . json_encode($residents));
             // Log::info($residents->count() . ' residents fetched for university_id: ' . $user->university_id);
             return response()->json([
                 'success' => true,

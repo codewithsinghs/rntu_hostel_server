@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ApiV1;
 
 use App\Models\Faculty;
+use App\Models\University;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -12,7 +13,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 
-class FacultiesRes Controller extends Controller
+class FacultiesResController extends Controller
 {
 
     use ApiResponses;
@@ -48,6 +49,11 @@ class FacultiesRes Controller extends Controller
                 : back()->withErrors('Unable to fetch faculty list');
         }
     }
+
+   
+
+
+
 
 
     /**

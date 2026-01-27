@@ -37,13 +37,18 @@ use App\Http\Controllers\{
     RoomChangeMessageController,
     // 19122025
 
-
 };
 use App\Http\Controllers\ApiV1\FacultyController;
 use App\Http\Controllers\ApiV1\DepartmentResController;
 use App\Http\Controllers\ApiV1\CourseResController;
 use App\Http\Controllers\ApiV1\ResidentResController;
+use App\Http\Controllers\ApiV1\HostelController;
+use App\Http\Controllers\ApiV1\RoomResController;
+use App\Http\Controllers\ApiV1\BedResController;
 
+use App\Http\Controllers\ApiV1\LeaveController;
+
+use App\Http\Controllers\CroneJobsController;
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -164,11 +169,6 @@ Route::middleware(['dual_auth'])->group(function () {
     Route::prefix('admin')->group(function () {
         Route::get('roles', [AdminController::class, 'getRoles']); // Get all buildings
         Route::get('staff-roles', [AdminController::class, 'getStaffRoles']); // Get all buildings
-        Route::get('buildings', [BuildingController::class, 'index']); // Get all buildings
-        Route::post('buildings/create', [BuildingController::class, 'store']);
-        Route::get('buildings/{id}', [BuildingController::class, 'show']); // Get single building
-        Route::put('buildings/{id}', [BuildingController::class, 'update']); // Update building
-        Route::delete('buildings/{id}', [BuildingController::class, 'destroy']); // Delete building
 
         //Faculties Apis 
         // Route::get('faculties', [FacultiesController::class, 'index']); // Get all buildings
@@ -179,12 +179,12 @@ Route::middleware(['dual_auth'])->group(function () {
         Route::apiResource('faculties', FacultyController::class);
 
         // Departments Apis
-        // Route::get('departments', [DepartmentController::class, 'index']);
-        // Route::post('departments/create', [DepartmentController::class, 'store']);
-        // Route::get('departments/{id}', [DepartmentController::class, 'show']);
-        // Route::put('departments/{id}', [DepartmentController::class, 'update']);
-        // Route::delete('departments/{id}', [DepartmentController::class, 'destroy']); // Delete department
-        Route::apiResource('departments', DepartmentResController::class);
+        Route::get('departments', [DepartmentController::class, 'index']);
+        Route::post('departments/create', [DepartmentController::class, 'store']);
+        Route::get('departments/{id}', [DepartmentController::class, 'show']);
+        Route::put('departments/{id}', [DepartmentController::class, 'update']);
+        Route::delete('departments/{id}', [DepartmentController::class, 'destroy']); // Delete department
+        Route::apiResource('manage/departments', DepartmentResController::class);
 
         // Courses Apis
         // Route::get('courses', [CourseController::class, 'index']);
@@ -194,29 +194,40 @@ Route::middleware(['dual_auth'])->group(function () {
         // Route::delete('courses/{id}', [CourseController::class, 'destroy']); // Delete department
         Route::apiResource('courses', CourseResController::class);
 
-        // Route::apiResource('rooms', RoomController::class);
+        Route::get('buildings', [BuildingController::class, 'index']); // Get all buildings
+        Route::post('buildings/create', [BuildingController::class, 'store']);
+        Route::get('buildings/{id}', [BuildingController::class, 'show']); // Get single building
+        Route::put('buildings/{id}', [BuildingController::class, 'update']); // Update building
+        Route::delete('buildings/{id}', [BuildingController::class, 'destroy']); // Delete building
         Route::get('buildings/{id}/rooms', [RoomController::class, 'getRooms']); //Total Rooms status of a building
-        Route::get('rooms', [RoomController::class, 'index']); // Get all rooms from all buildings
-        Route::get('rooms/{id}', [RoomController::class, 'show']); // Get single room
-        Route::post('rooms/create', [RoomController::class, 'store']); // Create room
-        Route::put('rooms/{id}', [RoomController::class, 'update']); // Update room
-        Route::delete('rooms/{id}', [RoomController::class, 'destroy']); // Delete room
+        Route::apiResource('hostels', HostelController::class);
 
+        // Route::get('rooms', [RoomController::class, 'index']); // Get all rooms from all buildings
+        // Route::get('rooms/{id}', [RoomController::class, 'show']); // Get single room
+        // Route::post('rooms/create', [RoomController::class, 'store']); // Create room
+        // Route::put('rooms/{id}', [RoomController::class, 'update']); // Update room
+        // Route::delete('rooms/{id}', [RoomController::class, 'destroy']); // Delete room
+        // Route::apiResource('rooms', RoomController::class);
+
+        Route::apiResource('rooms', RoomResController::class);
         // Route::get('/check-rooms', [AdminController::class, 'checkAvailableRooms']); // Check available rooms
 
         // Route::apiResource('beds', BedController::class);
-        Route::get('beds', [BedController::class, 'index']); // Get all beds
-        Route::get('beds/{id}', [BedController::class, 'show']); // Get single bed
-        Route::post('beds/create', [BedController::class, 'store']); // Create bed
-        Route::put('beds/update/{id}', [BedController::class, 'update']); // Update bed
-        Route::delete('beds/{id}', [BedController::class, 'destroy']); // Delete bed
-        Route::get('rooms/{room_id}/available-beds', [BedController::class, 'getAvailableBeds']);
+        // Route::get('beds', [BedController::class, 'index']); // Get all beds
+        // Route::get('beds/{id}', [BedController::class, 'show']); // Get single bed
+        // Route::post('beds/create', [BedController::class, 'store']); // Create bed
+        // Route::put('beds/update/{id}', [BedController::class, 'update']); // Update bed
+        // Route::delete('beds/{id}', [BedController::class, 'destroy']); // Delete bed
+        // Route::get('rooms/{room_id}/available-beds', [BedController::class, 'getAvailableBeds']);
 
+        Route::apiResource('beds', BedResController::class);
         //FETCH RESIDENTS
         // Route::get('residents', [ResidentController::class, 'getAllResidents']);
-
+        Route::get('residentswarden', [ResidentController::class, 'getAllResidents']);
         Route::apiResource('residents', ResidentResController::class);
-        Route::get('residents', [ResidentController::class, 'getAllResidents']);
+        Route::put('residents/{resident}/check-in', [ResidentResController::class, 'updateCheckInDate']);
+
+        // Route::get('residents', [ResidentController::class, 'getAllResidents']);
 
         Route::get('residents/unassigned', [ResidentController::class, 'getUnassignedResidents']);
         Route::get('residents/{id}', [ResidentController::class, 'getResidentById']);
@@ -297,6 +308,8 @@ Route::middleware(['dual_auth'])->group(function () {
         Route::patch('leave-requests/{id}/admin-approve', [LeaveRequestController::class, 'adminApprove']);
         Route::patch('leave-requests/{id}/admin-deny', [LeaveRequestController::class, 'adminDeny']);
         Route::get('residents/{residentId}/leave-requests', [LeaveRequestController::class, 'leaveReqById']);
+
+        // Route::apiResource('manage/leaves', LeaveController::class);
 
         // Admin Created Resident
         Route::post('residents/create', [AdminController::class, 'createResident']);
@@ -482,11 +495,16 @@ Route::middleware(['dual_auth'])->group(function () {
 
     Route::get('/admin/guests', [GuestController::class, 'guestsStatus']);
     Route::get('accessories/active', [AccessoryController::class, 'getActiveAccessories']);
+
+
+    Route::prefix('manage')->group(function () {
+        // Route::apiResource('leaves', LeaveController::class);
+        Route::apiResource('leaves', LeaveController::class)->names('manage.leaves');
+    });
 });
 
-/*
-    |------------------- RESIDENT -------------------
-    */
+//------------------- RESIDENT -------------------
+
 Route::middleware(['auth:sanctum', 'role:resident'])->prefix('resident')->group(function () {
     // Route::post('leave', [LeaveRequestController::class, 'store']);
     // Route::post('room-change/request', [RoomChangeController::class, 'requestRoomChange']);
@@ -527,5 +545,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('sync-resident-profiles', [ResidentController::class, 'syncAllProfiles']);
     Route::get('/resident/transactions', [PaymentController::class, 'index']);
 });
+Route::post('/crone-job/generate-invoices-on-subscriptions-expiry', [CroneJobsController::class, 'generateInvoiceOnSubscriptionsExpiry']);
 
 Route::middleware('auth:sanctum')->get('resident/dashboard', [ResidentController::class, 'dashboard']);
+
+
+
+// $roles = ['admin' => 'role:admin', 'warden' => 'role:warden', 'hod' => 'role:hod', 'resident' => 'role:resident',];
+// Route::middleware(['auth:sanctum'])->group(function () use ($roles) {
+//     foreach ($roles as $prefix => $middleware) {
+//         Route::middleware([$middleware])->prefix($prefix)->group(function () use ($prefix) {
+//             Route::apiResource('leaves', LeaveController::class)->names("$prefix.leaves");
+//         });
+//     }
+// });
+
+// Route::prefix('manage')->middleware(['auth:sanctum', 'role:admin|warden|hod'])->group(function () {
+//     Route::apiResource('leaves', LeaveController::class)->names('manage.leaves');
+// });

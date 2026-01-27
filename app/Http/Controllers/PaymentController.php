@@ -1378,153 +1378,319 @@ class PaymentController extends Controller
     //     }
     // }
 
+    // public function guestPayCallback(Request $request)
+    // {
+    //     $orderId = null; // Declare early for consistent logging
+
+    //     try {
+    //         // Log::info("🔔 Paytm callback received", ['payload' => $request->all()]);
+
+    //         // Step 1: Verify signature
+    //         $result = $this->paytmService->verifyCallback($request);
+    //         // Log::info('✅ Callback verification result', $result);
+
+    //         if (!$result['valid']) {
+    //             $orderId = $result['data']['ORDERID'] ?? null;
+    //             Log::warning('❌ Invalid Paytm signature', ['order_id' => $orderId]);
+
+    //             return $this->respondWithError(
+    //                 'Invalid payment response. Please try again.',
+    //                 $orderId,
+    //                 $request,
+    //                 'signature_invalid'
+    //             );
+    //         }
+
+    //         // Step 2: Locate order
+    //         $orderId = $result['data']['ORDERID'] ?? null;
+    //         $order   = Order::where('order_number', $orderId)->with('invoices')->first();
+
+    //         if (!$order) {
+    //             Log::error('❌ Order not found', ['order_id' => $orderId]);
+    //             return $this->respondWithError(
+    //                 'Order not found. Please contact support.',
+    //                 $orderId,
+    //                 $request,
+    //                 'order_not_found'
+    //             );
+    //         }
+    //         // Log::info('✅ Order located', ['order' => $order->id]);
+
+    //         // Step 3: Check transaction status
+    //         $status = $result['data']['STATUS'] ?? 'UNKNOWN';
+    //         // Log::info("ℹ️ Payment status received: {$status}", ['order_id' => $order->id]);
+
+    //         if ($status === 'TXN_FAILURE') {
+    //             Log::warning('❌ Transaction failed', [
+    //                 'order_id' => $order->id,
+    //                 'reason'   => $result['data']['RESPMSG'] ?? 'Unknown failure'
+    //             ]);
+
+    //             return $this->respondWithError(
+    //                 $result['data']['RESPMSG'] ?? 'Transaction failed. Please retry or check with your bank.',
+    //                 $order->id,
+    //                 $request,
+    //                 'txn_failure'
+    //             );
+    //         }
+
+    //         // Step 4: Record transaction
+    //         $transaction = Transaction::create([
+    //             'order_id'          => $order->id,
+    //             'txn_id'            => $result['data']['TXNID'] ?? null,
+    //             'status'            => $status,
+    //             'bank_txn_id'       => $result['data']['BANKTXNID'] ?? null,
+    //             'txn_amount'        => $result['data']['TXNAMOUNT'] ?? null,
+    //             'payment_mode'      => $result['data']['PAYMENTMODE'] ?? null,
+    //             'bank_name'         => $result['data']['BANKNAME'] ?? null,
+    //             'currency'          => $result['data']['CURRENCY'] ?? null,
+    //             'm_id'              => $result['data']['MID'] ?? null,
+    //             'response_code'     => $result['data']['RESPCODE'] ?? null,
+    //             'response_message'  => $result['data']['RESPMSG'] ?? null,
+    //             'response_payload'  => json_encode($result['data']),
+    //         ]);
+    //         // Log::info('✅ Transaction recorded', ['transaction_id' => $transaction->id]);
+
+    //         // Step 5: Handle success
+    //         if ($transaction->status === 'TXN_SUCCESS') {
+    //             // Log::info("💰 Processing successful payment", ['order_id' => $orderId]);
+
+    //             $order->update(['status' => 'paid']);
+
+    //             foreach ($order->invoices as $invoice) {
+    //                 $pivotPaid = (float) $order->amount; // Could be improved if multiple invoices
+    //                 $order->invoices()->updateExistingPivot($invoice->id, [
+    //                     'amount_paid' => $pivotPaid,
+    //                     'paid_at'     => now(),
+    //                 ]);
+
+    //                 $newPaidAmount = (float) $invoice->paid_amount + $pivotPaid;
+    //                 $remaining     = (float) $invoice->total_amount - $newPaidAmount;
+
+    //                 $invoice->update([
+    //                     'paid_amount'      => $newPaidAmount,
+    //                     'remaining_amount' => max($remaining, 0),
+    //                     'status'           => $remaining <= 0 ? 'paid' : 'partial',
+    //                 ]);
+
+    //                 // Log::info("📄 Invoice updated", [
+    //                 //     'invoice_id' => $invoice->id,
+    //                 //     'paid'       => $newPaidAmount,
+    //                 //     'remaining'  => $remaining
+    //                 // ]);
+    //             }
+
+    //             // Notify guest system
+    //             try {
+    //                 $txnId = $transaction->txn_id ?? rand(1000, 9999);
+    //                 $this->guestPayment(new Request([
+    //                     'guest_id'       => $order->guest_id,
+    //                     'transaction_id' => $txnId,
+    //                     'payment_method' => $transaction->payment_mode ?? 'Other',
+    //                     'remarks'        => 'Paid via Paytm callback',
+    //                 ]));
+    //                 // Log::info("📢 Guest payment recorded for guest_id {$order->guest_id}");
+    //             } catch (Exception $ex) {
+    //                 Log::error("Guest payment handler failed", [
+    //                     'order_id' => $orderId,
+    //                     'error'    => $ex->getMessage()
+    //                 ]);
+    //             }
+    //         } else {
+    //             Log::warning("⚠️ Payment not successful", [
+    //                 'order_id' => $orderId,
+    //                 'status'   => $transaction->status
+    //             ]);
+    //         }
+
+    //         // Step 6: Redirect user
+    //         return redirect()->away(config('app.frontend_url') . '/guest/payment/reciept?' . http_build_query([
+    //             'order_id' => $result['data']['ORDERID'] ?? null,
+    //             'txn_id'   => $result['data']['TXNID'] ?? null,
+    //             'amount'   => $result['data']['TXNAMOUNT'] ?? null,
+    //             'status'   => 'success',
+    //         ]));
+    //     } catch (Throwable $e) {
+    //         Log::critical('💥 Unexpected error during Paytm callback', [
+    //             'exception' => $e->getMessage(),
+    //             'order_id'  => $orderId,
+    //             'payload'   => $request->all(),
+    //         ]);
+
+    //         return $this->respondWithError(
+    //             'Something went wrong. Please try again later.',
+    //             $orderId,
+    //             $request,
+    //             'exception'
+    //         );
+    //     }
+    // }
+
     public function guestPayCallback(Request $request)
-    {
-        $orderId = null; // Declare early for consistent logging
+{
+    $orderId = null;
 
-        try {
-            // Log::info("🔔 Paytm callback received", ['payload' => $request->all()]);
+    try {
+        // 1️⃣ Verify Paytm payload
+        $result = $this->paytmService->verifyCallback($request);
+        $payload = $result['data'] ?? [];
 
-            // Step 1: Verify signature
-            $result = $this->paytmService->verifyCallback($request);
-            // Log::info('✅ Callback verification result', $result);
+        $orderId = $payload['ORDERID'] ?? null;
 
-            if (!$result['valid']) {
-                $orderId = $result['data']['ORDERID'] ?? null;
-                Log::warning('❌ Invalid Paytm signature', ['order_id' => $orderId]);
+        if (!$result['valid']) {
+            Log::warning('Invalid Paytm signature (Guest)', $payload);
 
-                return $this->respondWithError(
-                    'Invalid payment response. Please try again.',
-                    $orderId,
-                    $request,
-                    'signature_invalid'
-                );
-            }
+            return $this->respondWithError(
+                'Invalid payment response.',
+                $orderId,
+                $request,
+                'signature_invalid'
+            );
+        }
 
-            // Step 2: Locate order
-            $orderId = $result['data']['ORDERID'] ?? null;
-            $order   = Order::where('order_number', $orderId)->with('invoices')->first();
+        $status = $payload['STATUS'] ?? 'UNKNOWN';
+        $txnId  = $payload['TXNID'] ?? null;
 
-            if (!$order) {
-                Log::error('❌ Order not found', ['order_id' => $orderId]);
-                return $this->respondWithError(
-                    'Order not found. Please contact support.',
-                    $orderId,
-                    $request,
-                    'order_not_found'
-                );
-            }
-            // Log::info('✅ Order located', ['order' => $order->id]);
+        // 2️⃣ Fetch order
+        $order = Order::with('invoices')->where('order_number', $orderId)->first();
 
-            // Step 3: Check transaction status
-            $status = $result['data']['STATUS'] ?? 'UNKNOWN';
-            // Log::info("ℹ️ Payment status received: {$status}", ['order_id' => $order->id]);
+        if (!$order) {
+            Log::error('Guest order not found', ['order_id' => $orderId]);
 
-            if ($status === 'TXN_FAILURE') {
-                Log::warning('❌ Transaction failed', [
-                    'order_id' => $order->id,
-                    'reason'   => $result['data']['RESPMSG'] ?? 'Unknown failure'
-                ]);
+            return $this->respondWithError(
+                'Order not found.',
+                $orderId,
+                $request,
+                'order_not_found'
+            );
+        }
 
-                return $this->respondWithError(
-                    $result['data']['RESPMSG'] ?? 'Transaction failed. Please retry or check with your bank.',
-                    $order->id,
-                    $request,
-                    'txn_failure'
-                );
-            }
+        // 3️⃣ Idempotency: avoid duplicate callbacks
+        if ($txnId && Transaction::where('txn_id', $txnId)->exists()) {
+            return redirect()->away(
+                config('app.frontend_url') . '/guest/payment/reciept?' . http_build_query([
+                    'order_id' => $orderId,
+                    'txn_id'   => $txnId,
+                    'amount'   => $payload['TXNAMOUNT'] ?? null,
+                    'status'   => 'already_processed',
+                ])
+            );
+        }
 
-            // Step 4: Record transaction
-            $transaction = Transaction::create([
-                'order_id'          => $order->id,
-                'txn_id'            => $result['data']['TXNID'] ?? null,
-                'status'            => $status,
-                'bank_txn_id'       => $result['data']['BANKTXNID'] ?? null,
-                'txn_amount'        => $result['data']['TXNAMOUNT'] ?? null,
-                'payment_mode'      => $result['data']['PAYMENTMODE'] ?? null,
-                'bank_name'         => $result['data']['BANKNAME'] ?? null,
-                'currency'          => $result['data']['CURRENCY'] ?? null,
-                'm_id'              => $result['data']['MID'] ?? null,
-                'response_code'     => $result['data']['RESPCODE'] ?? null,
-                'response_message'  => $result['data']['RESPMSG'] ?? null,
-                'response_payload'  => json_encode($result['data']),
-            ]);
-            // Log::info('✅ Transaction recorded', ['transaction_id' => $transaction->id]);
+        // 4️⃣ Record transaction ALWAYS (success/failure/pending)
+        $transaction = Transaction::create([
+            'order_id'         => $order->id,
+            'txn_id'           => $txnId,
+            'status'           => $status,
+            'bank_txn_id'      => $payload['BANKTXNID'] ?? null,
+            'txn_amount'       => $payload['TXNAMOUNT'] ?? null,
+            'payment_mode'     => $payload['PAYMENTMODE'] ?? null,
+            'bank_name'        => $payload['BANKNAME'] ?? null,
+            'currency'         => $payload['CURRENCY'] ?? 'INR',
+            'm_id'             => $payload['MID'] ?? null,
+            'response_code'    => $payload['RESPCODE'] ?? null,
+            'response_message' => $payload['RESPMSG'] ?? null,
+            'response_payload' => json_encode($payload),
+        ]);
 
-            // Step 5: Handle success
-            if ($transaction->status === 'TXN_SUCCESS') {
-                // Log::info("💰 Processing successful payment", ['order_id' => $orderId]);
+        // 5️⃣ Update order meta (always)
+        $order->update([
+            'payment_method' => $payload['PAYMENTMODE'] ?? null,
+            'message'        => $payload['RESPMSG'] ?? null,
+        ]);
+
+        // 6️⃣ Handle SUCCESS
+        if ($status === 'TXN_SUCCESS') {
+
+            DB::transaction(function () use ($order, $transaction) {
 
                 $order->update(['status' => 'paid']);
 
+                $remaining = (float) $transaction->txn_amount;
+
                 foreach ($order->invoices as $invoice) {
-                    $pivotPaid = (float) $order->amount; // Could be improved if multiple invoices
+                    if ($remaining <= 0) break;
+
+                    $payable = min(
+                        $remaining,
+                        $invoice->total_amount - $invoice->paid_amount
+                    );
+
+                    $invoice->increment('paid_amount', $payable);
+
+                    $invoice->update([
+                        'remaining_amount' => max(0, $invoice->total_amount - $invoice->paid_amount),
+                        'status' => $invoice->paid_amount >= $invoice->total_amount
+                            ? 'paid'
+                            : 'partial'
+                    ]);
+
                     $order->invoices()->updateExistingPivot($invoice->id, [
-                        'amount_paid' => $pivotPaid,
+                        'amount_paid' => $payable,
                         'paid_at'     => now(),
                     ]);
 
-                    $newPaidAmount = (float) $invoice->paid_amount + $pivotPaid;
-                    $remaining     = (float) $invoice->total_amount - $newPaidAmount;
-
-                    $invoice->update([
-                        'paid_amount'      => $newPaidAmount,
-                        'remaining_amount' => max($remaining, 0),
-                        'status'           => $remaining <= 0 ? 'paid' : 'partial',
-                    ]);
-
-                    // Log::info("📄 Invoice updated", [
-                    //     'invoice_id' => $invoice->id,
-                    //     'paid'       => $newPaidAmount,
-                    //     'remaining'  => $remaining
-                    // ]);
+                    $remaining -= $payable;
                 }
 
-                // Notify guest system
-                try {
-                    $txnId = $transaction->txn_id ?? rand(1000, 9999);
-                    $this->guestPayment(new Request([
-                        'guest_id'       => $order->guest_id,
-                        'transaction_id' => $txnId,
-                        'payment_method' => $transaction->payment_mode ?? 'Other',
-                        'remarks'        => 'Paid via Paytm callback',
-                    ]));
-                    // Log::info("📢 Guest payment recorded for guest_id {$order->guest_id}");
-                } catch (Exception $ex) {
-                    Log::error("Guest payment handler failed", [
-                        'order_id' => $orderId,
-                        'error'    => $ex->getMessage()
-                    ]);
-                }
-            } else {
-                Log::warning("⚠️ Payment not successful", [
-                    'order_id' => $orderId,
-                    'status'   => $transaction->status
+                // Guest-specific accounting
+                app(GuestPaymentService::class)->record([
+                    'guest_id'       => $order->guest_id,
+                    'transaction_id' => $transaction->txn_id,
+                    'payment_method' => $transaction->payment_mode,
+                    'remarks'        => 'Paid via Paytm',
                 ]);
-            }
+            });
 
-            // Step 6: Redirect user
-            return redirect()->away(config('app.frontend_url') . '/guest/payment/reciept?' . http_build_query([
-                'order_id' => $result['data']['ORDERID'] ?? null,
-                'txn_id'   => $result['data']['TXNID'] ?? null,
-                'amount'   => $result['data']['TXNAMOUNT'] ?? null,
-                'status'   => 'success',
-            ]));
-        } catch (Throwable $e) {
-            Log::critical('💥 Unexpected error during Paytm callback', [
-                'exception' => $e->getMessage(),
-                'order_id'  => $orderId,
-                'payload'   => $request->all(),
-            ]);
-
-            return $this->respondWithError(
-                'Something went wrong. Please try again later.',
-                $orderId,
-                $request,
-                'exception'
+            return redirect()->away(
+                config('app.frontend_url') . '/guest/payment/reciept?' . http_build_query([
+                    'order_id' => $order->order_number,
+                    'txn_id'   => $txnId,
+                    'amount'   => $transaction->txn_amount,
+                    'status'   => 'success',
+                ])
             );
         }
+
+        // 7️⃣ Handle FAILURE
+        if ($status === 'TXN_FAILURE') {
+            return redirect()->away(
+                config('app.frontend_url') . '/guest/payment/reciept?' . http_build_query([
+                    'order_id' => $order->order_number,
+                    'txn_id'   => null,
+                    'amount'   => $order->amount,
+                    'status'   => 'failed',
+                ])
+            );
+        }
+
+        // 8️⃣ Pending / Unknown
+        return redirect()->away(
+            config('app.frontend_url') . '/guest/payment/reciept?' . http_build_query([
+                'order_id' => $order->order_number,
+                'txn_id'   => $txnId,
+                'amount'   => $payload['TXNAMOUNT'] ?? null,
+                'status'   => 'pending',
+            ])
+        );
+
+    } catch (\Throwable $e) {
+
+        Log::critical('Guest Paytm callback crashed', [
+            'order_id' => $orderId,
+            'error'    => $e->getMessage(),
+            'payload'  => $request->all(),
+        ]);
+
+        return $this->respondWithError(
+            'Unexpected error occurred.',
+            $orderId,
+            $request,
+            'exception'
+        );
     }
+}
+
 
 
 

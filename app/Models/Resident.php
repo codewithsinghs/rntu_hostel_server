@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Scopes\ResidentVisibilityScope;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Resident extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -47,6 +50,39 @@ class Resident extends Model
         'checkout_date'  => 'datetime',
     ];
 
+
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new ResidentVisibilityScope);
+    }
+    //     Bypass Scope (Only When Needed)
+
+    // For super admin reports / exports:
+
+    // Resident::withoutGlobalScope(ResidentVisibilityScope::class)->get();
+
+
+    //     protected function serializeDate(\DateTimeInterface $date)
+    // {
+    //     return $date->setTimezone(new \DateTimeZone(config('app.timezone')))
+    //                 ->format('Y-m-d\TH:i:sP');
+    // }
+
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->setTimezone(new \DateTimeZone(config('app.timezone')))
+            ->format('Y-m-d\TH:i');
+    }
+
+    public function getCheckInDateAttribute($value)
+    {
+        return $value
+            ? \Carbon\Carbon::parse($value)->timezone(config('app.timezone'))->format('Y-m-d\TH:i')
+            : null;
+    }
+
+
     // Relationship with Users table
     public function user()
     {
@@ -56,6 +92,16 @@ class Resident extends Model
     public function profile()
     {
         return $this->hasOne(Profile::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(\App\Models\Invoice::class, 'resident_id');
+    }
+
+    public function subscription()
+    {
+        return $this->hasOne(\App\Models\Subscription::class, 'resident_id');
     }
 
     public function bed()
@@ -85,6 +131,11 @@ class Resident extends Model
     public function university()
     {
         return $this->bed?->room?->building?->university();
+    }
+
+    public function getUniversity(): ?University
+    {
+        return $this->bed?->room?->building?->university;
     }
 
     public function profileHistories()
@@ -129,6 +180,7 @@ class Resident extends Model
             'bed'        => $bed?->bed_number,
         ];
     }
+
     private function ordinal($number)
     {
         $ends = ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th'];
@@ -279,5 +331,261 @@ class Resident extends Model
             ['resident_id' => $this->id],
             $data
         );
+    }
+
+    // public function scopeForUniversity($query, $universityId)
+    // {
+    //     return $query->where('university_id', $universityId);
+    // }
+
+    // public function scopeVisibleFor($query, $user)
+    // {
+    //     if (!$user) {
+    //         // safety fallback (should never happen if sanctum is applied)
+    //         return $query->whereRaw('1 = 0');
+    //     }
+
+    //     // Roles that can see everything
+    //     if ($user->hasAnyRole(['SUPER_ADMIN', 'SYSTEM_ADMIN'])) {
+    //         return $query;
+    //     }
+
+    //     // University-based restriction (ONLY reliable filter)
+    //     return $query->where('university_id', $user->university_id);
+    // }
+
+    // Final working till 22012026
+    // public function scopeVisibleFor($query, $user)
+    // {
+    //     if (!$user) {
+    //         return $query->whereRaw('1 = 0');
+    //     }
+
+    //     // Roles with full access
+    //     if ($user->hasAnyRole(['SUPER_ADMIN', 'SYSTEM_ADMIN'])) {
+    //         return $query;
+    //     }
+
+    //     // If user itself has no university → no data
+    //     if (empty($user->university_id)) {
+    //         return $query->whereRaw('1 = 0');
+    //     }
+
+    //     return $query->where(function ($q) use ($user) {
+    //         $q->whereHas('user', function ($uq) use ($user) {
+    //             $uq->where('university_id', $user->university_id);
+    //         });
+    //     });
+    // }
+
+    public function scopeVisibleFor($query, $user)
+    {
+        //  return $query->withoutGlobalScopes()
+        //          ->where(/* same logic */);
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        /* =====================================
+     | SUPER / SYSTEM ADMIN → FULL ACCESS
+     ===================================== */
+        if ($user->hasAnyRole(['SUPER_ADMIN', 'SYSTEM_ADMIN'])) {
+            return $query;
+        }
+
+        /* =====================================
+     | NO UNIVERSITY → NO DATA
+     ===================================== */
+        if (empty($user->university_id)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        /* =====================================
+     | WARDEN → UNIVERSITY + BUILDING
+     ===================================== */
+        if (
+            $user->hasRole('WARDEN') &&
+            ! empty($user->building_id)
+        ) {
+            return $query
+                ->whereHas('user', function ($uq) use ($user) {
+                    $uq->where('university_id', $user->university_id);
+                })
+                ->whereIn('building_id', (array) $user->building_id);
+        }
+
+        /* =====================================
+     | UNIVERSITY ADMIN → UNIVERSITY ONLY
+     ===================================== */
+        return $query->whereHas('user', function ($uq) use ($user) {
+            $uq->where('university_id', $user->university_id);
+        });
+    }
+
+
+    public function getAcademicFromUser(): array
+    {
+        $user = $this->user;
+
+        if (!$user || !$user->university_id) {
+            return [
+                'university' => null,
+                'faculty'    => null,
+                'department' => null,
+                'course'     => null,
+            ];
+        }
+
+        // Safe access to relations
+        $university = $user->university;  // Assuming User has `university()` relation
+        $faculty    = $user->faculty;     // Assuming User has `faculty()` relation
+        $department = $user->department;  // Assuming User has `department()` relation
+        $course     = $user->course;      // Assuming User has `course()` relation
+
+        return [
+            'university' => $university ? [
+                'id'   => $university->id,
+                'name' => $university->name,
+            ] : null,
+
+            'faculty' => $faculty ? [
+                'id'   => $faculty->id,
+                'name' => $faculty->name,
+            ] : null,
+
+            'department' => $department ? [
+                'id'   => $department->id,
+                'name' => $department->name,
+            ] : null,
+
+            'course' => $course ? [
+                'id'   => $course->id,
+                'name' => $course->name,
+            ] : null,
+        ];
+    }
+
+
+    public function getAcademicFromUserHierarchy(): array
+    {
+        $user = $this->user;
+
+        if (!$user || !$user->university_id) {
+            return [
+                'university' => null,
+                'faculty'    => null,
+                'department' => null,
+                'course'     => null,
+            ];
+        }
+
+        // Load university
+        $university = \App\Models\University::find($user->university_id);
+
+        // Load faculty belonging to this university (optional: pick first or assigned)
+        $faculty = \App\Models\Faculty::where('university_id', $user->university_id)
+            ->first();
+
+        // Load department belonging to this faculty
+        $department = $faculty
+            ? \App\Models\Department::where('faculty_id', $faculty->id)->first()
+            : null;
+
+        // Load course belonging to this department
+        $course = $department
+            ? \App\Models\Course::where('department_id', $department->id)->first()
+            : null;
+
+        return [
+            'university' => $university ? ['id' => $university->id, 'name' => $university->name] : null,
+            'faculty'    => $faculty    ? ['id' => $faculty->id, 'name' => $faculty->name]     : null,
+            'department' => $department ? ['id' => $department->id, 'name' => $department->name] : null,
+            'course'     => $course     ? ['id' => $course->id, 'name' => $course->name]         : null,
+        ];
+    }
+
+
+    public function getAcademicInfo(): array
+    {
+        $user    = $this->user;
+        // Log::info('user' . json_encode($user));
+        $profile = $this->profile;
+        // Log::info('profile' . json_encode($profile));
+        $courseName = $profile?->course;
+        // Log::info('courseName' . json_encode($courseName));
+        // Step 1: Validate base data
+        // Base validation
+        if (!$user || !$user->university_id || empty($courseName)) {
+            return [
+                'university' => null,
+                'faculty'    => null,
+                'department' => null,
+                'course'     => $courseName ? ['name' => $courseName] : null,
+            ];
+        }
+
+        // Log::info('courseName' . json_encode($courseName));
+
+        try {
+            /**
+             * 1️⃣ University (SOURCE OF TRUTH)
+             */
+            $university = University::find($user->university_id);
+
+            /**
+             * 2️⃣ Course (restricted to this university)
+             */
+            $course = Course::where('name', $courseName)
+                ->whereHas('department.faculty', function ($q) use ($user) {
+                    $q->where('university_id', $user->university_id);
+                })
+                ->with('department.faculty')
+                ->first();
+
+            // Course not found under this university
+            if (!$course) {
+                return [
+                    'university' => $university ? [
+                        'id'   => $university->id,
+                        'name' => $university->name,
+                    ] : null,
+                    'faculty'    => null,
+                    'department' => null,
+                    'course'     => ['name' => $courseName],
+                ];
+            }
+            $department = $course->department;
+            $faculty    = $department?->faculty;
+
+            return [
+                // 'university' => ['id'   => $university->id,'name' => $university->name,],
+
+                // 'faculty' => $faculty ? ['id'   => $faculty->id,'name' => $faculty->name,] : null,
+
+                // 'department' => $department ? [ 'id'   => $department->id,'name' => $department->name,] : null,
+
+                // 'course' => ['id'   => $course->id,'name' => $course->name,],
+                'university' => $university->name ?? null,
+                'faculty'    => $faculty->name ?? null,
+                'department' => $department->name ?? null,
+                'course'     => $course->name ?? null,
+            ];
+        } catch (\Throwable $e) {
+
+            Log::error('Academic resolution failed (profile based)', [
+                'resident_id' => $this->id,
+                'user_id'     => $user->id ?? null,
+                'university'  => $user->university_id ?? null,
+                'course'      => $courseName,
+                'exception'   => $e->getMessage(),
+            ]);
+
+            return [
+                'university' => null,
+                'faculty'    => null,
+                'department' => null,
+                'course'     => ['name' => $courseName],
+            ];
+        }
     }
 }

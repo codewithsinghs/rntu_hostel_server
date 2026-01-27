@@ -239,7 +239,7 @@
 @endsection
 
 @push('scripts')
-    <script>
+    {{-- <script>
         $(document).ready(function() {
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get("order_id");
@@ -268,7 +268,7 @@
                 },
                 success: function(response) {
                     console.log("✅ API Response:", response);
-
+                    console.log("Response Data:", response);
                     if (response.success && response.status === "TXN_SUCCESS" || response.status ===
                         "paid") {
                         $("#orderId").text(response.order.order_number);
@@ -348,5 +348,5 @@
         //     document.body.innerHTML = originalContent;
         //     location.reload();
         // }
-    </script>
+    </script> --}}
 @endpush

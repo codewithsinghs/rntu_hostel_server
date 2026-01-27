@@ -3,21 +3,22 @@
 namespace App\Http\Controllers;
 
 use Exception;
-use App\Models\Guest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use App\Models\GuestAccessory;
-use App\Models\AccessoryHead;
-use App\Models\Accessory;
-use App\Models\Fee;
 use Carbon\Carbon;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Fee;
+use App\Models\Guest;
 use App\Helpers\Helper;
 use App\Models\Invoice;
+use App\Models\Accessory;
 use App\Models\InvoiceItem;
+use App\Models\FeeException;
+use Illuminate\Http\Request;
+use App\Models\AccessoryHead;
+use App\Models\GuestAccessory;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class GuestController extends Controller
 {
@@ -102,12 +103,21 @@ class GuestController extends Controller
 
             $invoiceNumber = Invoice::generateInvoiceNumber('G'); // or 'SUB', 'ACC'
 
+            // $checkInDate = Carbon::parse($guest->check_in_date)->startOfDay();
+            $checkInDate = $guest->check_in_date
+                ? Carbon::parse($guest->check_in_date)->startOfDay()
+                : now()->startOfDay();
+            $billingFrom = $checkInDate;
+            $billingTo   = $checkInDate->copy()->addDays($months * 30);
+
             $invoice = Invoice::create([
                 'guest_id'         => $guest->id,
                 // 'invoice_number'   => $invoiceNumber,
                 'invoice_number'   => $invoiceNumber,
-                'invoice_date'     => now(),
-                'due_date'         => now()->addDays($months * 30), // Due in 30 days
+                // 'invoice_date'     => now(),
+                // 'due_date'         => now()->addDays($months * 30), // Due in 30 days
+                'invoice_date'     => $billingFrom,
+                'due_date'         => $billingTo,
                 'total_amount'     => 0,
                 'paid_amount'      => 0,
                 'remaining_amount' => 0,
@@ -129,18 +139,27 @@ class GuestController extends Controller
                     // Charge once only
                     $amount = $fee->amount;
                     $monthsApplied = 1;
+
+                    $itemFrom = $billingFrom;
+                    $itemTo   = $billingFrom;   // same day
+
                 } else {
                     // Normal fees → multiply by months
                     $amount = $fee->amount * $months;
                     $monthsApplied = $months;
+
+                    $itemFrom = $billingFrom;
+                    $itemTo   = $billingTo;
                 }
                 $invoice->items()->create([
                     'item_type'    => 'fee',
                     'item_id'      => $fee->id,
                     'description'  => $fee->name,
                     'price'        => $fee->amount,
-                    'from_date'    => now(),
-                    'to_date'      => now()->addDays($monthsApplied * 30),
+                    // 'from_date'    => now(),
+                    // 'to_date'      => now()->addDays($monthsApplied * 30),
+                    'from_date'    => $itemFrom,
+                    'to_date'      => $itemTo,
                     'total_amount' => $amount,
                 ]);
                 $grandTotal += $amount;
@@ -157,8 +176,10 @@ class GuestController extends Controller
                     'description'  => $accessory?->accessoryHead?->name,
                     'price'        => $accessory?->price ?? 0,
                     'total_amount' => $amount,
-                    'from_date'    => now(),
-                    'to_date'      => now()->addDays($months * 30),
+                    // 'from_date'    => now(),
+                    // 'to_date'      => now()->addDays($months * 30),
+                    'from_date'    => $billingFrom,
+                    'to_date'      => $billingTo,
                 ]);
                 $grandTotal += $amount;
             }
@@ -232,65 +253,550 @@ class GuestController extends Controller
     }
 
 
+    // public function getGuestTotalAmount(Request $request)
+    // {
+    //     try {
+    //         // Log::info($request->all());
+    //         $user = Helper::get_auth_guest_user($request);
+    //         $guest = Guest::select('id', 'months', 'days', 'status', 'fee_waiver')->findOrFail($user->id);
+
+    //         $months = $guest->months ?? 1;
+    //         $days = $guest->days ?? 0;
+
+    //         $guestAccessories = InvoiceItem::whereHas('invoice', function ($q) use ($guest) {
+    //             $q->where('guest_id', $guest->id);
+    //         })
+    //             ->where('item_type', 'accessory')
+    //             ->with('accessory.accessoryHead')
+    //             ->get();
+    //         // Log::info("Guest Accessories fetched: " . json_encode($guestAccessories));
+    //         $accessoryTotal = $guestAccessories->sum('total_amount');
+    //         $accessoryHeadIds = $guestAccessories->pluck('accessory.accessory_head_id')->unique()->values()->all();
+    //         // Log::info("Guest Accessory Head IDs fetched: " . json_encode($accessoryHeadIds));
+
+    //         $hostelFee = 0;
+    //         $messFee = 0;
+    //         $cautionMoney = 0;
+    //         $waiverFeeUpdated = false;
+
+    //         if ($guest->status === 'waiver_approved') {
+    //             $feeException = \App\Models\FeeException::where('guest_id', $guest->id)->first();
+
+    //             if ($feeException) {
+    //                 $hostelFee = $feeException->hostel_fee ?? 0;
+    //                 $cautionMoney = $feeException->caution_money ?? 0;
+    //                 $waiverFeeUpdated = true;
+    //             }
+    //         }
+
+
+    //         if (!$waiverFeeUpdated) {
+    //             $hostelFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Hostel Fee'))
+    //                 ->where('is_active', true)
+    //                 ->latest('from_date')
+    //                 ->value('amount') ?? 0;
+
+    //             $messFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Mess Fee'))
+    //                 ->where('is_active', true)
+    //                 ->latest('from_date')
+    //                 ->value('amount') ?? 0;
+
+    //             $cautionMoney = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Caution Money'))
+    //                 ->where('is_active', true)
+    //                 ->latest('from_date')
+    //                 ->value('amount') ?? 0;
+
+    //             $hostelFee = $hostelFeePerMonth * $months;
+    //             $messFee = $messFeePerMonth * $months;
+    //         }
+
+    //         $finalTotal = $accessoryTotal + $hostelFee + $messFee + $cautionMoney;
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Guest total amount fetched successfully.',
+    //             'data' => [
+    //                 'guest_id' => $guest->id,
+    //                 'months' => $months,
+    //                 'days' => $days,
+    //                 'total_accessory_amount' => $accessoryTotal,
+    //                 'hostel_fee' => $hostelFee + $messFee,
+    //                 'caution_money' => $cautionMoney,
+    //                 'final_total_amount' => $finalTotal,
+    //                 'accessory_head_ids' => $accessoryHeadIds,
+    //                 'waiver_fee_updated' => $waiverFeeUpdated,
+    //             ],
+    //             'errors' => null
+    //         ]);
+    //     } catch (ModelNotFoundException $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Guest not found',
+    //             'data' => null,
+    //             'errors' => null
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch data',
+    //             'data' => null,
+    //             'errors' => ['exception' => $e->getMessage()]
+    //         ], 500);
+    //     }
+    // }
+
+    // public function getGuestTotalAmount(Request $request)
+    // {
+    //     try {
+    //         $user = Helper::get_auth_guest_user($request);
+
+    //         $guest = Guest::select('id', 'months', 'days', 'status', 'fee_waiver')
+    //             ->findOrFail($user->id);
+
+    //         $months = $guest->months ?? 1;
+    //         $days   = $guest->days ?? 0;
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Fetch Latest Invoice (ANY STATUS)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $invoice = Invoice::where('guest_id', $guest->id)
+    //             ->latest()
+    //             ->first();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Accessories (Invoice Driven)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $guestAccessories = InvoiceItem::whereHas('invoice', function ($q) use ($guest) {
+    //             $q->where('guest_id', $guest->id);
+    //         })
+    //             ->where('item_type', 'accessory')
+    //             ->with('accessory.accessoryHead')
+    //             ->get();
+
+    //         $accessoryTotal   = $guestAccessories->sum('total_amount');
+    //         $accessoryHeadIds = $guestAccessories
+    //             ->pluck('accessory.accessory_head_id')
+    //             ->unique()
+    //             ->values()
+    //             ->all();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Hostel / Mess / Caution Logic (UNCHANGED)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $hostelFee = 0;
+    //         $messFee   = 0;
+    //         $cautionMoney = 0;
+    //         $waiverFeeUpdated = false;
+
+    //         if ($guest->status === 'waiver_approved') {
+    //             $feeException = FeeException::where('guest_id', $guest->id)->first();
+
+    //             if ($feeException) {
+    //                 $hostelFee       = $feeException->hostel_fee ?? 0;
+    //                 $cautionMoney    = $feeException->caution_money ?? 0;
+    //                 $waiverFeeUpdated = true;
+    //             }
+    //         }
+
+    //         if (!$waiverFeeUpdated) {
+    //             $hostelFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Hostel Fee'))
+    //                 ->where('is_active', true)
+    //                 ->latest('from_date')
+    //                 ->value('amount') ?? 0;
+
+    //             $messFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Mess Fee'))
+    //                 ->where('is_active', true)
+    //                 ->latest('from_date')
+    //                 ->value('amount') ?? 0;
+
+    //             $cautionMoney = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Caution Money'))
+    //                 ->where('is_active', true)
+    //                 ->latest('from_date')
+    //                 ->value('amount') ?? 0;
+
+    //             $hostelFee = $hostelFeePerMonth * $months;
+    //             $messFee   = $messFeePerMonth * $months;
+    //         }
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Totals
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $computedTotal = $accessoryTotal + $hostelFee + $messFee + $cautionMoney;
+
+    //         // Prefer invoice values if present
+    //         $totalAmount     = $invoice->total_amount     ?? $computedTotal;
+    //         $paidAmount      = $invoice->paid_amount      ?? 0;
+    //         $remainingAmount = $invoice->remaining_amount ?? ($totalAmount - $paidAmount);
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Payment State
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $paymentStatus = match (true) {
+    //             $paidAmount <= 0                   => 'pending',
+    //             $remainingAmount > 0               => 'partial',
+    //             $remainingAmount <= 0              => 'paid',
+    //         };
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Guest total amount fetched successfully.',
+    //             'data' => [
+    //                 'guest_id' => $guest->id,
+    //                 'months' => $months,
+    //                 'days' => $days,
+
+    //                 'total_accessory_amount' => $accessoryTotal,
+    //                 'hostel_fee' => $hostelFee + $messFee,
+    //                 'caution_money' => $cautionMoney,
+
+    //                 'final_total_amount' => $totalAmount,
+    //                 'paid_amount' => $paidAmount,
+    //                 'remaining_amount' => $remainingAmount,
+    //                 'payment_status' => $paymentStatus,
+
+    //                 'accessory_head_ids' => $accessoryHeadIds,
+    //                 'waiver_fee_updated' => $waiverFeeUpdated,
+    //             ],
+    //             'errors' => null
+    //         ]);
+    //     } catch (ModelNotFoundException) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Guest not found',
+    //             'data' => null,
+    //             'errors' => null
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch data',
+    //             'data' => null,
+    //             'errors' => ['exception' => $e->getMessage()]
+    //         ], 500);
+    //     }
+    // }
+
+
+    // public function getGuestTotalAmount(Request $request)
+    // {
+    //     try {
+    //         $user = Helper::get_auth_guest_user($request);
+
+    //         $guest = Guest::select('id', 'months', 'days')
+    //             ->findOrFail($user->id);
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Fetch ACTIVE Invoice (SOURCE OF TRUTH)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $invoice = Invoice::where('guest_id', $guest->id)
+    //             ->whereIn('status', ['pending', 'partial', 'paid'])
+    //             ->orderByDesc('id')   // ✅ NOT latest()
+    //             ->firstOrFail();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Force fresh DB values (important after payment callbacks)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $invoice->refresh();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Invoice Items (STRICTLY THIS INVOICE)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $items = InvoiceItem::where('invoice_id', $invoice->id)
+    //             ->with('accessory.accessoryHead')
+    //             ->get();
+
+    //         $accessoryTotal = $items
+    //             ->where('item_type', 'accessory')
+    //             ->sum('total_amount');
+
+    //         $accessoryHeadIds = $items
+    //             ->where('item_type', 'accessory')
+    //             ->pluck('accessory.accessory_head_id')
+    //             ->filter()
+    //             ->unique()
+    //             ->values()
+    //             ->all();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Response (NO CALCULATIONS)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Invoice fetched successfully.',
+    //             'data' => [
+    //                 'guest_id' => $guest->id,
+    //                 'invoice_id' => $invoice->id,
+
+    //                 'months' => $guest->months,
+    //                 'days'   => $guest->days,
+
+    //                 'total_amount'     => (float) $invoice->total_amount,
+    //                 'paid_amount'      => (float) $invoice->paid_amount,
+    //                 'remaining_amount' => (float) $invoice->remaining_amount,
+    //                 'payment_status'   => $invoice->status,
+
+    //                 'total_accessory_amount' => $accessoryTotal,
+    //                 'accessory_head_ids'     => $accessoryHeadIds,
+    //             ],
+    //             'errors' => null
+    //         ]);
+    //     } catch (ModelNotFoundException) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Guest or invoice not found.',
+    //             'data' => null,
+    //             'errors' => null
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch invoice data.',
+    //             'data' => null,
+    //             'errors' => ['exception' => $e->getMessage()]
+    //         ], 500);
+    //     }
+    // }
+
+    // public function getGuestTotalAmount(Request $request)
+    // {
+    //     try {
+    //         $user = Helper::get_auth_guest_user($request);
+
+    //         $guest = Guest::select('id', 'months', 'days')
+    //             ->findOrFail($user->id);
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Fetch ACTIVE Invoice (Authoritative)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $invoice = Invoice::where('guest_id', $guest->id)
+    //             ->whereIn('status', ['pending', 'partial', 'paid'])
+    //             ->orderByDesc('id')
+    //             ->firstOrFail();
+
+    //         $invoice->refresh();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Invoice Items (STRICT)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $items = InvoiceItem::where('invoice_id', $invoice->id)
+    //             ->with('accessory.accessoryHead')
+    //             ->get();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Fee Breakdown (FROM INVOICE ONLY)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $cautionMoney = $items->where('item_type', 'caution')->sum('total_amount');
+    //         $hostelFee    = $items->where('item_type', 'hostel')->sum('total_amount');
+    //         $messFee      = $items->where('item_type', 'mess')->sum('total_amount');
+    //         $accessoryFee = $items->where('item_type', 'accessory')->sum('total_amount');
+
+    //         $accessoryHeadIds = $items
+    //             ->where('item_type', 'accessory')
+    //             ->pluck('accessory.accessory_head_id')
+    //             ->filter()
+    //             ->unique()
+    //             ->values()
+    //             ->all();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Allocate Paid Amount (Caution → Hostel → Mess → Accessories)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $remainingPaid = $invoice->paid_amount;
+
+    //         $paidCaution = min($remainingPaid, $cautionMoney);
+    //         $remainingPaid -= $paidCaution;
+
+    //         $paidHostel = min($remainingPaid, $hostelFee);
+    //         $remainingPaid -= $paidHostel;
+
+    //         $paidMess = min($remainingPaid, $messFee);
+    //         $remainingPaid -= $paidMess;
+
+    //         $paidAccessory = min($remainingPaid, $accessoryFee);
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Remaining Amounts (Read-only)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $remainingCaution = $cautionMoney - $paidCaution;
+    //         $remainingHostel  = $hostelFee - $paidHostel;
+    //         $remainingMess    = $messFee - $paidMess;
+    //         $remainingAccessory = $accessoryFee - $paidAccessory;
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Response
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Invoice fetched successfully.',
+    //             'data' => [
+    //                 'guest_id' => $guest->id,
+    //                 'invoice_id' => $invoice->id,
+
+    //                 'months' => $guest->months,
+    //                 'days'   => $guest->days,
+
+    //                 'total_amount'     => (float) $invoice->total_amount,
+    //                 'paid_amount'      => (float) $invoice->paid_amount,
+    //                 'remaining_amount' => (float) $invoice->remaining_amount,
+    //                 'payment_status'   => $invoice->status,
+
+    //                 'breakup' => [
+    //                     'caution_money' => [
+    //                         'total' => $cautionMoney,
+    //                         'paid' => $paidCaution,
+    //                         'remaining' => $remainingCaution,
+    //                     ],
+    //                     'hostel_fee' => [
+    //                         'total' => $hostelFee,
+    //                         'paid' => $paidHostel,
+    //                         'remaining' => $remainingHostel,
+    //                     ],
+    //                     'mess_fee' => [
+    //                         'total' => $messFee,
+    //                         'paid' => $paidMess,
+    //                         'remaining' => $remainingMess,
+    //                     ],
+    //                     'accessory_fee' => [
+    //                         'total' => $accessoryFee,
+    //                         'paid' => $paidAccessory,
+    //                         'remaining' => $remainingAccessory,
+    //                     ],
+    //                 ],
+
+    //                 'accessory_head_ids' => $accessoryHeadIds,
+    //             ],
+    //             'errors' => null
+    //         ]);
+    //     } catch (ModelNotFoundException) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Guest or invoice not found.',
+    //             'data' => null,
+    //             'errors' => null
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch invoice data.',
+    //             'data' => null,
+    //             'errors' => ['exception' => $e->getMessage()]
+    //         ], 500);
+    //     }
+    // }
+
     public function getGuestTotalAmount(Request $request)
     {
         try {
-            // Log::info($request->all());
             $user = Helper::get_auth_guest_user($request);
-            $guest = Guest::select('id', 'months', 'days', 'status', 'fee_waiver')->findOrFail($user->id);
+
+            $guest = Guest::select('id', 'months', 'days')
+                ->findOrFail($user->id);
 
             $months = $guest->months ?? 1;
-            $days = $guest->days ?? 0;
+            $days   = $guest->days ?? 0;
 
-            $guestAccessories = InvoiceItem::whereHas('invoice', function ($q) use ($guest) {
-                $q->where('guest_id', $guest->id);
-            })
-                ->where('item_type', 'accessory')
+            /*
+        |--------------------------------------------------------------------------
+        | Fetch ACTIVE Invoice (Authoritative)
+        |--------------------------------------------------------------------------
+        */
+            $invoice = Invoice::where('guest_id', $guest->id)
+                ->whereIn('status', ['pending', 'partial', 'paid'])
+                ->orderByDesc('id')
+                ->firstOrFail();
+
+            $invoice->refresh();
+
+            /*
+        |--------------------------------------------------------------------------
+        | Invoice Items (ONLY THIS INVOICE)
+        |--------------------------------------------------------------------------
+        */
+            $items = InvoiceItem::where('invoice_id', $invoice->id)
                 ->with('accessory.accessoryHead')
                 ->get();
-            // Log::info("Guest Accessories fetched: " . json_encode($guestAccessories));
-            $accessoryTotal = $guestAccessories->sum('total_amount');
-            $accessoryHeadIds = $guestAccessories->pluck('accessory.accessory_head_id')->unique()->values()->all();
-            // Log::info("Guest Accessory Head IDs fetched: " . json_encode($accessoryHeadIds));
 
-            $hostelFee = 0;
-            $messFee = 0;
-            $cautionMoney = 0;
-            $waiverFeeUpdated = false;
+            /*
+        |--------------------------------------------------------------------------
+        | Breakup FROM INVOICE (NO RE-CALCULATION)
+        |--------------------------------------------------------------------------
+        */
+            $accessoryTotal = $items->where('item_type', 'accessory')->sum('total_amount');
+            $hostelFee      = $items->where('item_type', 'fee')->whereIn('description', ['Hostel Fee', 'hostel_fee'])->sum('total_amount');
+            $messFee        = $items->where('item_type', 'fee')->whereIn('description', ['mess_fee', 'Mess Fee'])->sum('total_amount');
+            $cautionMoney   = $items->where('item_type', 'fee')->whereIn('description', ['caution_money', 'Caution Money'])->sum('total_amount');
 
-            if ($guest->status === 'waiver_approved') {
-                $feeException = \App\Models\FeeException::where('guest_id', $guest->id)->first();
+            $accessoryHeadIds = $items
+                ->where('item_type', 'accessory')
+                ->pluck('accessory.accessory_head_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
 
-                if ($feeException) {
-                    $hostelFee = $feeException->hostel_fee ?? 0;
-                    $cautionMoney = $feeException->caution_money ?? 0;
-                    $waiverFeeUpdated = true;
-                }
-            }
+            /*
+        |--------------------------------------------------------------------------
+        | Payment Allocation (Caution FIRST – internal only)
+        |--------------------------------------------------------------------------
+        */
+            $remainingPaid = $invoice->paid_amount;
 
+            $paidCaution = min($remainingPaid, $cautionMoney);
+            $remainingPaid -= $paidCaution;
 
-            if (!$waiverFeeUpdated) {
-                $hostelFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Hostel Fee'))
-                    ->where('is_active', true)
-                    ->latest('from_date')
-                    ->value('amount') ?? 0;
+            $paidHostel = min($remainingPaid, ($hostelFee + $messFee));
+            $remainingPaid -= $paidHostel;
 
-                $messFeePerMonth = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Mess Fee'))
-                    ->where('is_active', true)
-                    ->latest('from_date')
-                    ->value('amount') ?? 0;
+            /*
+        |--------------------------------------------------------------------------
+        | Final Values (FROM INVOICE)
+        |--------------------------------------------------------------------------
+        */
+            $finalTotalAmount = (float) $invoice->total_amount;
+            $paidAmount      = (float) $invoice->paid_amount;
+            $remainingAmount = (float) $invoice->remaining_amount;
 
-                $cautionMoney = Fee::whereHas('feeHead', fn($q) => $q->where('name', 'Caution Money'))
-                    ->where('is_active', true)
-                    ->latest('from_date')
-                    ->value('amount') ?? 0;
+            $paymentStatus = match (true) {
+                $paidAmount <= 0          => 'pending',
+                $remainingAmount > 0     => 'partial',
+                default                  => 'paid',
+            };
 
-                $hostelFee = $hostelFeePerMonth * $months;
-                $messFee = $messFeePerMonth * $months;
-            }
-
-            $finalTotal = $accessoryTotal + $hostelFee + $messFee + $cautionMoney;
-
+            /*
+        |--------------------------------------------------------------------------
+        | RESPONSE — SAME AS EARLIER
+        |--------------------------------------------------------------------------
+        */
             return response()->json([
                 'success' => true,
                 'message' => 'Guest total amount fetched successfully.',
@@ -298,19 +804,25 @@ class GuestController extends Controller
                     'guest_id' => $guest->id,
                     'months' => $months,
                     'days' => $days,
+
                     'total_accessory_amount' => $accessoryTotal,
                     'hostel_fee' => $hostelFee + $messFee,
                     'caution_money' => $cautionMoney,
-                    'final_total_amount' => $finalTotal,
+
+                    'final_total_amount' => $finalTotalAmount,
+                    'paid_amount' => $paidAmount,
+                    'remaining_amount' => $remainingAmount,
+                    'payment_status' => $paymentStatus,
+
                     'accessory_head_ids' => $accessoryHeadIds,
-                    'waiver_fee_updated' => $waiverFeeUpdated,
+                    'waiver_fee_updated' => false, // retained for frontend compatibility
                 ],
                 'errors' => null
             ]);
-        } catch (ModelNotFoundException $e) {
+        } catch (ModelNotFoundException) {
             return response()->json([
                 'success' => false,
-                'message' => 'Guest not found',
+                'message' => 'Guest or invoice not found',
                 'data' => null,
                 'errors' => null
             ], 404);
@@ -325,6 +837,110 @@ class GuestController extends Controller
     }
 
 
+    // public function getGuestTotalAmount(Request $request)
+    // {
+    //     try {
+    //         $user  = Helper::get_auth_guest_user($request);
+    //         $guest = Guest::select('id', 'months', 'days', 'status')
+    //             ->findOrFail($user->id);
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Fetch Latest Active Invoice (SOURCE OF TRUTH)
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $invoice = Invoice::where('guest_id', $guest->id)
+    //             ->whereIn('status', ['pending', 'paid', 'partial'])
+    //             ->latest()
+    //             ->with('items.accessory.accessoryHead')
+    //             ->first();
+
+    //         Log::info('invoice' . json_encode($invoice));
+
+    //         if (!$invoice) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Invoice not generated yet.',
+    //                 'data'    => null,
+    //                 'errors'  => null
+    //             ], 422);
+    //         }
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Invoice Item Breakdown
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $items = $invoice->items;
+
+    //         $accessoryTotal = $items->where('item_type', 'accessory')->sum('total_amount');
+
+    //         $hostelFee      = $items->whereIn('item_type', ['fee', 'mess'])->whereIn('description', ['Hostel Fee', 'Mess Fee'])->sum('total_amount');
+
+    //         $cautionMoney   = $items->where('item_type', 'fee')->where('description', 'Caution Money')->sum('total_amount');
+    //         Log::info('cautionMoney' . json_encode($cautionMoney));
+    //         $accessoryHeadIds = $items
+    //             ->where('item_type', 'accessory')
+    //             ->pluck('accessory.accessory_head_id')
+    //             ->filter()
+    //             ->unique()
+    //             ->values()
+    //             ->all();
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Payment State
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         $paymentStatus = match ($invoice->status) {
+    //             'paid'    => 'PAID',
+    //             'partial' => 'PARTIALLY_PAID',
+    //             default   => 'UNPAID'
+    //         };
+
+    //         /*
+    //     |--------------------------------------------------------------------------
+    //     | Final Response
+    //     |--------------------------------------------------------------------------
+    //     */
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Invoice amount fetched successfully.',
+    //             'data' => [
+    //                 'guest_id'              => $guest->id,
+    //                 'invoice_id'            => $invoice->id,
+    //                 'months'                => $guest->months,
+    //                 'days'                  => $guest->days,
+    //                 'payment_status'        => $paymentStatus,
+
+    //                 'total_accessory_amount' => $accessoryTotal,
+    //                 'hostel_and_mess_fee'   => $hostelFee,
+    //                 'caution_money'         => $cautionMoney,
+
+    //                 'invoice_total'         => $invoice->total_amount,
+    //                 'paid_amount'           => $invoice->paid_amount,
+    //                 'due_amount'            => $invoice->due_amount,
+
+    //                 'accessory_head_ids'    => $accessoryHeadIds,
+    //             ],
+    //             'errors' => null
+    //         ]);
+    //     } catch (ModelNotFoundException) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Guest not found.',
+    //             'data'    => null,
+    //             'errors'  => null
+    //         ], 404);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to fetch invoice details.',
+    //             'data'    => null,
+    //             'errors'  => ['exception' => $e->getMessage()]
+    //         ], 500);
+    //     }
+    // }
 
 
     public function pendingGuests(Request $request)

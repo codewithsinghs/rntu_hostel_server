@@ -48,7 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
 // --------------------------------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------------------
 
-
 // ApexCharts Config
 const options = {
     chart: {
@@ -111,7 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.render();
 });
 
-
 // Reusing initialization of chart
 // const studentOptions = {
 //   chart: {
@@ -129,7 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
 //   },
 // };
 
-
 // function safeChart(selector, options) {
 //     const el = document.querySelector(selector);
 //     if (!el) return;
@@ -141,7 +138,6 @@ document.addEventListener("DOMContentLoaded", () => {
 // safeChart("#student-registration-chart", studentOptions);
 // // safeChart("#teacher-chart", teacherOptions);
 // // safeChart("#fees-chart", feesOptions);
-
 
 // --------------------------------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------------------

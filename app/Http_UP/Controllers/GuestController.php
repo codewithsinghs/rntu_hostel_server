@@ -323,8 +323,7 @@ class GuestController extends Controller
         }
     }
 
-
-
+   
 
     public function pendingGuests(Request $request)
     {

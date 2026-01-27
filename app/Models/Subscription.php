@@ -2,18 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Payment;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 
 class Subscription extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'guest_id',
         'resident_id',
         'fee_head_id',
+        'item_type',
+        'item_id',
+        'next_invoice_generation',
         'fee_id',
         'price',
         'total_amount',
@@ -24,6 +29,7 @@ class Subscription extends Model
         'remarks',
         'created_by'
     ];
+
     protected $hidden = [
         'updated_at',
         'created_at',

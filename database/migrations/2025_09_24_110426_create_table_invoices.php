@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('table_invoices', function (Blueprint $table) {
             $table->id();
+            $table->string('invoice_number')->unique()->change();
             $table->timestamps();
         });
     }

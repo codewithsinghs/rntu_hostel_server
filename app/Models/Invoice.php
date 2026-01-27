@@ -13,6 +13,7 @@ class Invoice extends Model
         'type',
         'invoice_number',
         'invoice_date',
+        'billing_upto',
         'due_date',
         'total_amount',
         'paid_amount',
@@ -27,7 +28,8 @@ class Invoice extends Model
         'created_by',
         // 'type',
         'invoice_date',
-        // 'due_date',
+        'billing_upto',
+        'due_date',
         // 'total_amount',
         // 'paid_amount',
         // 'remaining_amount',
@@ -49,7 +51,26 @@ class Invoice extends Model
 
     public function items()
     {
-        return $this->hasMany(InvoiceItem::class);
+        // return $this->hasMany(InvoiceItem::class);
+        return $this->hasMany(
+            \App\Models\InvoiceItem::class,
+            'invoice_id',   // FK
+            'id'            // PK
+        );
+    }
+
+    public function recomputeStatus(): void
+    {
+        $this->remaining_amount = max(
+            0,
+            $this->total_amount - $this->paid_amount
+        );
+
+        $this->status = match (true) {
+            $this->paid_amount <= 0 => 'unpaid',
+            $this->paid_amount < $this->total_amount => 'partial',
+            default => 'paid',
+        };
     }
 
     public function payments()
@@ -95,10 +116,10 @@ class Invoice extends Model
     public function orders()
     {
         return $this->belongsToMany(Order::class)
-                    ->withPivot('amount_paid', 'paid_at')
-                    ->withTimestamps();
+            ->withPivot('amount_paid', 'paid_at')
+            ->withTimestamps();
     }
-   
+
     public function fee()
     {
         return $this->belongsTo(Fee::class, 'fee_head_id');
@@ -109,7 +130,7 @@ class Invoice extends Model
         return $this->belongsTo(Subscription::class, 'subscription_id');
     }
 
-    
+
     public function studentAccessory()
     {
         return $this->belongsTo(StudentAccessory::class, 'student_accessory_id');

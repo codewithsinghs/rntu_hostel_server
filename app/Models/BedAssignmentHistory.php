@@ -17,4 +17,12 @@ class BedAssignmentHistory extends Model
         'discharged_at',
         'notes',
     ];
+
+
+    // public function scopeAccessible($query)
+    // {
+    //     return $query->whereHas('bed.room', function ($q) {
+    //         $q->accessible();
+    //     });
+    // }
 }

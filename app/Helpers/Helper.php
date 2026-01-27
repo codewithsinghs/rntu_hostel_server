@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\Order;
+use Illuminate\Support\Facades\Schema;
 
 // use Illuminate\Support\Facades\DB;
 // use Illuminate\Support\Facades\Log;
@@ -18,6 +19,14 @@ use App\Models\Order;
 
 class Helper
 {
+
+//    if (! function_exists('schema_has_column')) {
+//         function schema_has_column(string $table, string $column): bool
+//         {
+//             return Schema::hasColumn($table, $column);
+//         }
+//     }
+
     public static function clean($string)
     {
 

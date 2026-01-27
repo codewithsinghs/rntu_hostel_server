@@ -219,6 +219,20 @@ class ApiAuthController extends Controller
         return ApiResponse::success('Logged out successfully');
     }
 
+    protected function resolveRedirect(string $role): string
+    {
+        $map = [
+            'super_admin'         => '/super-admin/dashboard',
+            'admin'               => '/admin/dashboard',
+            'resident'            => '/resident/dashboard',
+            'guest_professional'  => '/professional/guest',
+            'guest'               => '/guest/dashboard',
+        ];
+
+        return $map[$role] ?? '/dashboard';
+    }
+
+
     // public function apiLogin(Request $request)
     // {
     //     $request->validate([
@@ -381,36 +395,108 @@ class ApiAuthController extends Controller
     //     ]);
     // }
 
+    // Final Working Code Beloww
+    // public function apiLogin(Request $request)
+    // {
+    //     // Log::info('Login attempt', $request->all());
+    //     Log::info('Login attempt at apiauthcontroller');
+
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //         'password' => 'required_without:mobile',
+    //         'mobile' => 'required_without:password',
+    //     ]);
+
+    //     // Try authenticating as a User
+    //     $user = User::where('email', $request->email)->first();
+
+    //     if ($user && Hash::check($request->password, $user->password)) {
+
+    //         // Log::info('its user');
+    //         $token = $user->createToken('api-token')->plainTextToken;
+
+    //         $role = $user->getRoleNames()->first();
+    //         // $redirectUrl = match ($role) {
+    //         //     'resident' => '/resident/dashboard',
+    //         //     'admin' => '/admin/dashboard',
+    //         //     'professional' => '/professional/home',
+    //         //     default => '/login',
+    //         // };
+
+    //         // Dynamically build redirect path
+    //         // $dynamicRedirect = "/{$role}/dashboard";
+    //         // $redirectUrl = Route::has($role . '.dashboard') ? $dynamicRedirect : '/dashboard';
+
+    //         // Try named route first
+    //         if (Route::has($role . '.dashboard')) {
+    //             $redirectUrl = route($role . '.dashboard');
+    //         } elseif (Route::has($role . '/dashboard')) {
+    //             $redirectUrl = url($role . '/dashboard');
+    //         } else {
+    //             $redirectUrl = url('/dashboard');
+    //         }
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => [
+    //                 'user' => $user,
+    //                 'role' => $role,
+    //                 'token' => $token,
+    //                 'redirect_url' => $redirectUrl
+    //             ]
+    //         ]);
+    //     }
+
+
+    //     // Log::info('trying guest');
+    //     // Try authenticating as a Guest (must match both email and mobile)
+    //     $guest = Guest::where('email', $request->email)
+    //         ->where('number', $request->mobile)
+    //         ->first();
+
+    //     // Log::info('trying guest' . json_encode($guest));
+
+    //     if ($guest) {
+    //         // Optional: check if guest is a professional
+    //         $isProfessional = $guest->type === 'professional'; // adjust field name as needed
+    //         $token = $guest->createToken('guest-token')->plainTextToken;
+    //         $redirectUrl = $isProfessional ? '/professional/guest' : '/guest/welcome';
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => [
+    //                 'user' => $guest,
+    //                 'role' => $isProfessional ? 'guest-professional' : 'guest',
+    //                 'token' => $token,
+    //                 'redirect_url' => $redirectUrl
+    //             ]
+    //         ]);
+    //     }
+
+    //     // No account found
+    //     return response()->json([
+    //         'success' => false,
+    //         'message' => 'No account found with provided credentials'
+    //     ], 404);
+    // }
+
+
     public function apiLogin(Request $request)
     {
-        // Log::info('Login attempt', $request->all());
-        // Log::info('Login attempt');
-
         $request->validate([
-            'email' => 'required|email',
-            'password' => 'required_without:mobile',
-            'mobile' => 'required_without:password',
+            'email'    => 'required|email',
+            'password' => 'nullable|required_without:mobile',
+            'mobile'   => 'nullable|required_without:password',
         ]);
 
-        // Try authenticating as a User
+        //  Try USER login first
+
         $user = User::where('email', $request->email)->first();
 
-        if ($user && Hash::check($request->password, $user->password)) {
+        if ($user && $request->filled('password') && Hash::check($request->password, $user->password)) {
 
-            // Log::info('its user');
-            $token = $user->createToken('api-token')->plainTextToken;
-
-            $role = $user->getRoleNames()->first();
-            // $redirectUrl = match ($role) {
-            //     'resident' => '/resident/dashboard',
-            //     'admin' => '/admin/dashboard',
-            //     'professional' => '/professional/home',
-            //     default => '/login',
-            // };
-
-            // Dynamically build redirect path
-            // $dynamicRedirect = "/{$role}/dashboard";
-            // $redirectUrl = Route::has($role . '.dashboard') ? $dynamicRedirect : '/dashboard';
+            $token = $user->createToken('auth_token')->plainTextToken;
+            $role  = $user->getRoleNames()->first() ?? 'user';
 
             // Try named route first
             if (Route::has($role . '.dashboard')) {
@@ -421,50 +507,127 @@ class ApiAuthController extends Controller
                 $redirectUrl = url('/dashboard');
             }
 
+            $response = [
+                'id'    => $user->id,
+                'name'  => $user->name,
+                'email' => $user->email,
+                'role'  => $role,
+            ];
+
+            if ($role === 'resident') {
+                $response['resident'] = [
+                    'scholar_no' => $actor->resident->scholar_no ?? null,
+                    'number'     => $actor->resident->number ?? null,
+                ];
+            }
+
             return response()->json([
-                'success' => true,
+                'success'       => true,
+                // 'token_type'    => 'Bearer',
+                // 'access_token'  => $token,
+                // 'auth_type'     => 'user',
+                // 'role'          => $role,
+                // 'redirect'      => $this->resolveRedirect($role),
+                // 'profile'       => $user,
                 'data' => [
-                    'user' => $user,
+                    'user' => $response,
                     'role' => $role,
                     'token' => $token,
-                    'redirect_url' => $redirectUrl
+                    'redirect_url' => $redirectUrl,
+                    // 'redirect_url'      => $this->resolveRedirect($role),
                 ]
             ]);
         }
 
+        // Try GUEST login
 
-        // Log::info('trying guest');
-        // Try authenticating as a Guest (must match both email and mobile)
         $guest = Guest::where('email', $request->email)
             ->where('number', $request->mobile)
             ->first();
 
-        // Log::info('trying guest' . json_encode($guest));
-
         if ($guest) {
-            // Optional: check if guest is a professional
-            $isProfessional = $guest->type === 'professional'; // adjust field name as needed
-            $token = $guest->createToken('guest-token')->plainTextToken;
-            $redirectUrl = $isProfessional ? '/professional/guest' : '/guest/welcome';
 
+            $token = $guest->createToken('auth_token')->plainTextToken;
+
+            $role = $guest->type === 'professional'
+                ? 'guest_professional'
+                : 'guest';
+
+            $isProfessional = $guest->type === 'professional'; // adjust field name as needed
+
+            $response = [
+                'id'    => $guest->id,
+                'name'  => $guest->name,
+                'email' => $guest->email,
+                'role'  => $role,
+            ];
+
+            if ($role === 'resident') {
+                $response['resident'] = [
+                    'scholar_no' => $actor->resident->scholar_no ?? null,
+                    'number'     => $actor->resident->number ?? null,
+                ];
+            }
+            
             return response()->json([
-                'success' => true,
+                'success'       => true,
+                // 'token_type'    => 'Bearer',
+                // 'access_token'  => $token,
+                // 'auth_type'     => 'guest',
+                // 'role'          => $role,
+                // 'redirect'      => $this->resolveRedirect($role),
+                // 'profile'       => $guest,
                 'data' => [
-                    'user' => $guest,
+                    'user' => $response,
                     'role' => $isProfessional ? 'guest-professional' : 'guest',
                     'token' => $token,
-                    'redirect_url' => $redirectUrl
+                    // 'redirect_url' => $redirectUrl
+                    'redirect'      => $this->resolveRedirect($role),
                 ]
             ]);
         }
+        // Fail
 
-        // No account found
         return response()->json([
             'success' => false,
-            'message' => 'No account found with provided credentials'
-        ], 404);
+            'message' => 'Invalid credentials'
+        ], 401);
     }
 
+    //     protected function resolveUserRedirect(?string $role): string
+    //     {
+    //         if ($role && Route::has($role . '.dashboard')) {
+    //             return route($role . '.dashboard');
+    //         }
+
+    //         if ($role && Route::has($role . '/dashboard')) {
+    //             return url($role . '/dashboard');
+    //         }
+
+    //         return url('/dashboard');
+    //     }
+
+    //     Route::post('/api/login', [ApiAuthController::class, 'apiLogin'])
+    //     ->middleware('throttle:5,1');
+    //     Token Scope Awareness (Optional but Pro)
+    // $guest->createToken('guest-token', ['guest'])->plainTextToken;
+    // $user->createToken('api-token', ['user'])->plainTextToken;
+
+
+    // Then protect routes:
+
+    // Route::middleware(['auth:sanctum', 'ability:guest'])->group(function () {
+    //     // guest routes
+    // });
+
+    protected function resolveGuestRedirect(string $role): string
+    {
+        return match ($role) {
+            'guest_professional' => url('/professional/guest'),
+            'guest'              => url('/guest/welcome'),
+            default              => url('/guest'),
+        };
+    }
 
 
     // public function profile(Request $request)
@@ -484,7 +647,7 @@ class ApiAuthController extends Controller
 
     public function profile(Request $request)
     {
-        // Log::info('finding userpf', $request->all());
+        Log::info('finding userpf', $request->all());
 
         $auth = $request->user(); // could be User or Guest
 
@@ -515,115 +678,465 @@ class ApiAuthController extends Controller
     /**
      * Show profile data
      */
+    // public function show(Request $request)
+    // {
+    //     Log::info('here');
+    //     try {
+    //         // Get authenticated user or fallback to auth-id header
+    //         $user = $request->user() ?? User::findOrFail($request->header('auth-id'));
+
+    //         // Eager load resident relation
+    //         $user->load('resident', 'roles');
+
+    //         $role = $user->getRoleNames()->first(); // only for User
+    //         // Log::info('role' . json_encode($role));
+
+    //         // // Build limited response (same structure, trimmed data) 
+    //         // $limited = [ 
+    //         //     'id' => $user->id, 
+    //         //     'name' => $user->name, 
+    //         //     'email' => $user->email, 
+
+    //         //     'role' => $role, 
+
+    //         //     'resident' => [ 
+    //         //         'address' => $user->resident->address ?? null, 
+    //         //         'phone' => $user->resident->phone ?? null, 
+    //         //     ], 
+    //         // ];
+
+    //         // Handle AJAX request
+    //         if ($request->ajax()) {
+
+    //             $role = $user->getRoleNames()->first();
+    //             $user->role = $role; // dynamically append property  
+
+    //             // Base response 
+    //             $response = [
+    //                 'id' => $user->id ?? null,
+    //                 'name' => $user->name ?? null,
+    //                 'email' => $user->email ?? null,
+    //                 'gender' => $user->gender ?? null,
+    //                 'mobile' => $user->mobile ?? null,
+    //                 'role' => $role ?? null,
+    //                 'profile_image' => $user->profile->image ?? null,
+    //             ];
+
+    //             // Include resident data ONLY if role is resident 
+    //             if ($role === 'resident') {
+    //                 $response['resident'] = [
+    //                     'name' => $user->name ?? null,
+    //                     'email' => $user->email ?? null,
+    //                     'number' => $user->resident->number ?? null,
+    //                     'scholar_no' => $user->resident->scholar_no ?? null,
+    //                     'parent_no' => $user->resident->parent_no ?? null,
+    //                     'guardian_no' => $user->resident->guardian_no ?? null,
+    //                     'fathers_name' => $user->fathers_name ?? null,
+    //                     'mothers_name' => $user->mothers_name ?? null,
+    //                     'gender' => $user->gender ?? null,
+    //                     'address' => $user->resident->address ?? null,
+    //                 ];
+    //             }
+
+    //             // Build a limited response payload 
+    //             // $user = [
+    //             //     'id' => $user->id,
+    //             //     'name' => $user->name,
+    //             //     'email' => $user->email,
+    //             //     'gender' =>    $user->gender,
+    //             //     'mobile' =>    $user->mobile,
+    //             //     'role' => $role,
+    //             //     'resident' => [
+    //             //         'name' => $user->name,
+    //             //         'email' => $user->email,
+    //             //         'number' =>    $user->resident->number,
+    //             //         'scholar_no' =>    $user->resident->scholar_no,
+    //             //         'parent_no' =>    $user->resident->parent_no,
+    //             //         'guardian_no' =>    $user->resident->guardian_no,
+    //             //         'fathers_name' =>    $user->fathers_name,
+    //             //         'mothers_name' =>    $user->mothers_name,
+    //             //         'gender' =>    $user->gender,
+    //             //         'address' => $user->resident->address ?? null,
+
+    //             //     ],
+    //             //     'profile_image' => $user->profile->image,
+    //             // ];
+
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Profile loaded successfully',
+    //                 'data' => $response,
+    //                 'errors' => null,
+    //             ], 200);
+    //         }
+
+    //         // Handle non-AJAX (web form)
+    //         return view('profile.show', compact('user'));
+    //     } catch (Exception $e) {
+    //         Log::error('Profile load failed: ' . $e->getMessage());
+
+    //         if ($request->ajax()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Failed to load profile',
+    //                 'data' => null,
+    //                 'errors' => $e->getMessage(),
+    //             ], 500);
+    //         }
+
+    //         return redirect()->back()->withErrors('Failed to load profile: ' . $e->getMessage());
+    //     }
+    // }
+
+    // public function show(Request $request)
+    // {
+    //     Log::info('Profile fetch initiated');
+
+    //     try {
+
+    //         $authType = $request->header('auth-type') ?? 'user';
+
+    //         // USER / RESIDENT PROFILE (Sanctum)
+
+    //         if ($authType === 'user') {
+    //             // Get authenticated user or fallback to auth-id header
+    //             $user = $request->user() ?? User::findOrFail($request->header('auth-id'));
+
+    //             // Eager load resident relation
+    //             $user->load('resident', 'roles');
+
+    //             $role = $user->getRoleNames()->first(); // only for User
+    //             // Log::info('role' . json_encode($role));
+
+    //             // Handle AJAX request
+    //             // if ($request->ajax()) {
+
+    //             $role = $user->getRoleNames()->first();
+    //             $user->role = $role; // dynamically append property  
+
+    //             // Base response 
+    //             $response = [
+    //                 'id' => $user->id ?? null,
+    //                 'name' => $user->name ?? null,
+    //                 'email' => $user->email ?? null,
+    //                 'gender' => $user->gender ?? null,
+    //                 'mobile' => $user->mobile ?? null,
+    //                 'role' => $role ?? null,
+    //                 'profile_image' => $user->profile->image ?? null,
+    //             ];
+
+    //             // Include resident data ONLY if role is resident 
+    //             if ($role === 'resident') {
+    //                 $response['resident'] = [
+    //                     'name' => $user->name ?? null,
+    //                     'email' => $user->email ?? null,
+    //                     'number' => $user->resident->number ?? null,
+    //                     'scholar_no' => $user->resident->scholar_no ?? null,
+    //                     'parent_no' => $user->resident->parent_no ?? null,
+    //                     'guardian_no' => $user->resident->guardian_no ?? null,
+    //                     'fathers_name' => $user->fathers_name ?? null,
+    //                     'mothers_name' => $user->mothers_name ?? null,
+    //                     'gender' => $user->gender ?? null,
+    //                     'address' => $user->resident->address ?? null,
+    //                 ];
+    //             }
+
+    //         }
+
+    //         // GUEST PROFILE (Token based, no user table)
+    //         elseif ($authType === 'guest') {
+
+    //         Log::info('Guest profile fetch initiated');
+    //             $guestId = $request->header('auth-id');
+
+    //             if (!$guestId) {
+    //                 abort(401, 'Guest authentication failed');
+    //             }
+
+    //             $guest = Guest::findOrFail($guestId);
+
+    //             $response = [
+    //                 'id'     => $guest->id,
+    //                 'name'   => $guest->name,
+    //                 'email'  => $guest->email,
+    //                 'gender' => $guest->gender,
+    //                 'mobile' => $guest->number,
+    //                 'role'   => 'guest',
+
+    //                 'guest' => [
+    //                     'scholar_no'        => $guest->scholar_no,
+    //                     'faculty_id'        => $guest->faculty_id,
+    //                     'department_id'     => $guest->department_id,
+    //                     'course_id'         => $guest->course_id,
+    //                     'room_preference'   => $guest->room_preference,
+    //                     'food_preference'   => $guest->food_preference,
+    //                     'status'            => $guest->status,
+    //                     'is_verified'       => $guest->is_verified,
+    //                 ]
+    //             ];
+    //         } else {
+    //             abort(403, 'Invalid authentication type');
+    //         }
+    //         // AJAX JSON RESPONSE
+
+    //         if ($request->ajax()) {
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Profile loaded successfully',
+    //                 'data' => $response,
+    //                 'errors' => null,
+    //             ], 200);
+    //         }
+
+    //         // Handle non-AJAX (web form)
+    //         return view('profile.show', compact('user'));
+    //     } catch (Exception $e) {
+    //         Log::error('Profile load failed: ' . $e->getMessage());
+
+    //         if ($request->ajax()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Failed to load profile',
+    //                 'data' => null,
+    //                 'errors' => $e->getMessage(),
+    //             ], 500);
+    //         }
+
+    //         return redirect()->back()->withErrors('Failed to load profile: ' . $e->getMessage());
+    //     }
+    // }
+
+    // public function show(Request $request)
+    // {
+    //     Log::info('Profile fetch initiated');
+
+    //     try {
+
+    //         // $authType = $request->header('auth-type') ?? 'user';
+    //         $authType = $request->header('auth-type');
+
+    //         if (!$authType) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Authentication type missing',
+    //                 'data' => null,
+    //                 'errors' => 'auth-type header is required (user | guest)'
+    //             ], 400);
+    //         }
+
+    //         Log::info('Auth type: ' . $authType);
+    //         $response = null;
+    //         $user = null; // important to avoid undefined variable
+
+    //         /* ==================================================
+    //      | USER / RESIDENT PROFILE
+    //      ==================================================*/
+    //         if ($authType === 'user') {
+
+    //             $user = $request->user()
+    //                 ?? User::findOrFail($request->header('auth-id'));
+
+    //             $user->load('resident', 'roles', 'profile');
+
+    //             $role = $user->getRoleNames()->first();
+
+    //             $response = [
+    //                 'id'     => $user->id,
+    //                 'name'   => $user->name,
+    //                 'email'  => $user->email,
+    //                 'gender' => $user->gender,
+    //                 'mobile' => $user->mobile,
+    //                 'role'   => $role,
+    //                 'profile_image' => optional($user->profile)->image,
+    //             ];
+
+    //             if ($role === 'resident') {
+    //                 $response['resident'] = [
+    //                     'scholar_no'   => optional($user->resident)->scholar_no,
+    //                     'number'       => optional($user->resident)->number,
+    //                     'parent_no'    => optional($user->resident)->parent_no,
+    //                     'guardian_no'  => optional($user->resident)->guardian_no,
+    //                     'fathers_name' => $user->fathers_name,
+    //                     'mothers_name' => $user->mothers_name,
+    //                     'gender'       => $user->gender,
+    //                     'address'      => optional($user->resident)->address,
+    //                 ];
+    //             }
+    //         }
+
+    //         /* ==================================================
+    //      | GUEST PROFILE
+    //      ==================================================*/ elseif ($authType === 'guest') {
+
+    //             Log::info('Guest profile fetch initiated');
+
+    //             $guestId = $request->header('auth-id');
+
+    //             if (!$guestId) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Guest authentication failed',
+    //                     'data' => null,
+    //                     'errors' => 'Missing auth-id header'
+    //                 ], 401);
+    //             }
+
+    //             $guest = Guest::findOrFail($guestId);
+
+    //             $response = [
+    //                 'id'     => $guest->id,
+    //                 'name'   => $guest->name,
+    //                 'email'  => $guest->email,
+    //                 'gender' => $guest->gender,
+    //                 'mobile' => $guest->number,
+    //                 'role'   => 'guest',
+
+    //                 'guest' => [
+    //                     'scholar_no'      => $guest->scholar_no,
+    //                     'faculty_id'      => $guest->faculty_id,
+    //                     'department_id'   => $guest->department_id,
+    //                     'course_id'       => $guest->course_id,
+    //                     'room_preference' => $guest->room_preference,
+    //                     'food_preference' => $guest->food_preference,
+    //                     'status'          => $guest->status,
+    //                     'is_verified'     => $guest->is_verified,
+    //                     'is_postpaid'     => $guest->is_postpaid,
+    //                 ],
+    //             ];
+    //         } else {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Invalid authentication type',
+    //                 'data' => null,
+    //                 'errors' => 'Unsupported auth-type'
+    //             ], 403);
+    //         }
+
+    //         /* ==================================================
+    //      | JSON RESPONSE (API-FIRST)
+    //      ==================================================*/
+    //         if ($request->expectsJson()) {
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Profile loaded successfully',
+    //                 'data'    => $response,
+    //                 'errors'  => null,
+    //             ], 200);
+    //         }
+
+    //         /* ==================================================
+    //      | WEB VIEW (ONLY FOR USER)
+    //      ==================================================*/
+    //         if ($authType === 'user') {
+    //             return view('profile.show', compact('user'));
+    //         }
+
+    //         abort(404);
+    //     } catch (\Exception $e) {
+
+    //         Log::error('Profile load failed: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to load profile',
+    //             'data'    => null,
+    //             'errors'  => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
     public function show(Request $request)
     {
-        // Log::info('here');
+        Log::info('Profile fetch initiated');
+
         try {
-            // Get authenticated user or fallback to auth-id header
-            $user = $request->user() ?? User::findOrFail($request->header('auth-id'));
 
-            // Eager load resident relation
-            $user->load('resident', 'roles');
+            $auth = $request->user(); // Sanctum resolved
 
-            $role = $user->getRoleNames()->first(); // only for User
-            // Log::info('role' . json_encode($role));
+            if (!$auth) {
+                abort(401, 'Unauthenticated');
+            }
 
-            // // Build limited response (same structure, trimmed data) 
-            // $limited = [ 
-            //     'id' => $user->id, 
-            //     'name' => $user->name, 
-            //     'email' => $user->email, 
+            /* ==============================
+         | USER PROFILE
+         |==============================*/
+            if ($auth instanceof \App\Models\User) {
 
-            //     'role' => $role, 
+                $auth->load(['resident', 'roles', 'profile']);
 
-            //     'resident' => [ 
-            //         'address' => $user->resident->address ?? null, 
-            //         'phone' => $user->resident->phone ?? null, 
-            //     ], 
-            // ];
+                $role = $auth->getRoleNames()->first();
 
-            // Handle AJAX request
-            if ($request->ajax()) {
-
-                $role = $user->getRoleNames()->first();
-                $user->role = $role; // dynamically append property  
-
-                // Base response 
-                $response = [ 
-                    'id' => $user->id ?? null, 
-                    'name' => $user->name ?? null, 
-                    'email' => $user->email ?? null, 
-                    'gender' => $user->gender ?? null, 
-                    'mobile' => $user->mobile ?? null, 
-                    'role' => $role ?? null, 
-                    'profile_image' => $user->profile->image ?? null, 
+                $response = [
+                    'id'            => $auth->id,
+                    'name'          => $auth->name,
+                    'email'         => $auth->email,
+                    'gender'        => $auth->gender,
+                    'mobile'        => $auth->mobile,
+                    'role'          => $role,
+                    'auth_type'     => 'user',
+                    'profile_image' => $auth->profile->image ?? null,
                 ];
 
-                // Include resident data ONLY if role is resident 
-                if ($role === 'resident') {
-                    $response['resident'] = [ 
-                        'name' => $user->name ?? null, 
-                        'email' => $user->email ?? null, 
-                        'number' => $user->resident->number ?? null, 
-                        'scholar_no' => $user->resident->scholar_no ?? null, 
-                        'parent_no' => $user->resident->parent_no ?? null, 
-                        'guardian_no' => $user->resident->guardian_no ?? null, 
-                        'fathers_name' => $user->fathers_name ?? null, 
-                        'mothers_name' => $user->mothers_name ?? null, 
-                        'gender' => $user->gender ?? null, 
-                        'address' => $user->resident->address ?? null,
+                if ($role === 'resident' && $auth->resident) {
+                    $response['resident'] = [
+                        'number'        => $auth->resident->number,
+                        'scholar_no'    => $auth->resident->scholar_no,
+                        'parent_no'     => $auth->resident->parent_no,
+                        'guardian_no'   => $auth->resident->guardian_no,
+                        'address'       => $auth->resident->address,
                     ];
                 }
-
-                // Build a limited response payload 
-                // $user = [
-                //     'id' => $user->id,
-                //     'name' => $user->name,
-                //     'email' => $user->email,
-                //     'gender' =>    $user->gender,
-                //     'mobile' =>    $user->mobile,
-                //     'role' => $role,
-                //     'resident' => [
-                //         'name' => $user->name,
-                //         'email' => $user->email,
-                //         'number' =>    $user->resident->number,
-                //         'scholar_no' =>    $user->resident->scholar_no,
-                //         'parent_no' =>    $user->resident->parent_no,
-                //         'guardian_no' =>    $user->resident->guardian_no,
-                //         'fathers_name' =>    $user->fathers_name,
-                //         'mothers_name' =>    $user->mothers_name,
-                //         'gender' =>    $user->gender,
-                //         'address' => $user->resident->address ?? null,
-
-                //     ],
-                //     'profile_image' => $user->profile->image,
-                // ];
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Profile loaded successfully',
-                    'data' => $response,
-                    'errors' => null,
-                ], 200);
             }
 
-            // Handle non-AJAX (web form)
-            return view('profile.show', compact('user'));
-        } catch (Exception $e) {
-            Log::error('Profile load failed: ' . $e->getMessage());
+            /* ==============================
+         | GUEST PROFILE
+         |==============================*/ elseif ($auth instanceof \App\Models\Guest) {
 
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to load profile',
-                    'data' => null,
-                    'errors' => $e->getMessage(),
-                ], 500);
+                $response = [
+                    'id'        => $auth->id,
+                    'name'      => $auth->name,
+                    'email'     => $auth->email,
+                    'gender'    => $auth->gender,
+                    'mobile'    => $auth->number,
+                    'role'      => 'guest',
+                    'auth_type' => 'guest',
+
+                    'guest' => [
+                        'scholar_no'      => $auth->scholar_no,
+                        'faculty_id'      => $auth->faculty_id,
+                        'department_id'   => $auth->department_id,
+                        'course_id'       => $auth->course_id,
+                        'room_preference' => $auth->room_preference,
+                        'food_preference' => $auth->food_preference,
+                        'status'          => $auth->status,
+                        'is_verified'     => $auth->is_verified,
+                    ]
+                ];
+            } else {
+                abort(403, 'Invalid authentication model');
             }
 
-            return redirect()->back()->withErrors('Failed to load profile: ' . $e->getMessage());
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile loaded successfully',
+                'data'    => $response,
+                'errors'  => null,
+            ]);
+        } catch (\Throwable $e) {
+
+            Log::error('Profile load failed', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load profile',
+                'data'    => null,
+                'errors'  => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
     }
+
 
     public function update(Request $request)
     {

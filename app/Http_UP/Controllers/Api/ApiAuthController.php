@@ -646,11 +646,39 @@ class ApiAuthController extends Controller
             // Handle AJAX request
             if ($request->ajax()) {
                 $role = $user->getRoleNames()->first();
-                $user->role = $role; // dynamically append property     
+                $user->role = $role; // dynamically append property
+                
+                // Base response 
+                $response = [ 
+                    'id' => $user->id ?? null, 
+                    'name' => $user->name ?? null, 
+                    'email' => $user->email ?? null, 
+                    'gender' => $user->gender ?? null, 
+                    'mobile' => $user->mobile ?? null, 
+                    'role' => $role ?? null, 
+                    'profile_image' => $user->profile->image ?? null, 
+                ];
+
+                // Include resident data ONLY if role is resident 
+                if ($role === 'resident') {
+                    $response['resident'] = [ 
+                        'name' => $user->name ?? null, 
+                        'email' => $user->email ?? null, 
+                        'number' => $user->resident->number ?? null, 
+                        'scholar_no' => $user->resident->scholar_no ?? null, 
+                        'parent_no' => $user->resident->parent_no ?? null, 
+                        'guardian_no' => $user->resident->guardian_no ?? null, 
+                        'fathers_name' => $user->fathers_name ?? null, 
+                        'mothers_name' => $user->mothers_name ?? null, 
+                        'gender' => $user->gender ?? null, 
+                        'address' => $user->resident->address ?? null,
+                    ];
+                }
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Profile loaded successfully',
-                    'data' => $user,
+                    'data' => $response,
                     'errors' => null,
                 ], 200);
             }

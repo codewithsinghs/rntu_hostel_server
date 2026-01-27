@@ -224,7 +224,7 @@ select {
     overflow: hidden;
     text-align: left;
     font-size: 14px;
-    color: #a0aec0;
+    /* color: #a0aec0; */
     font-family: Helvetica;
     padding: 10px;
 }
@@ -264,7 +264,7 @@ select {
     overflow: hidden;
     text-align: left;
     font-size: 14px;
-    color: #a0aec0;
+    /* color: #a0aec0; */
     font-family: Helvetica;
     padding: 10px;
 }
@@ -316,7 +316,7 @@ select {
     overflow: hidden;
     text-align: left;
     font-size: 14px;
-    color: #a0aec0;
+    /* color: #a0aec0; */
     font-family: Helvetica;
     padding: 10px;
     background-size: 10px;
@@ -426,7 +426,7 @@ select {
     overflow: hidden;
     text-align: left;
     font-size: 14px;
-    color: #a0aec0;
+    /* color: #a0aec0; */
     font-family: Helvetica;
     padding: 10px;
 }

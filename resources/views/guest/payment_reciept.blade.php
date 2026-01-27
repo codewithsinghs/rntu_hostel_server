@@ -80,7 +80,7 @@
             <!-- Header -->
             <div class="text-center mb-4 pb-3">
                 {{-- <img src="{{ asset('images/logo.png') }}" alt="Logo" height="60">https://rntu.ac.in/ --}}
-                <img src="https://rntu.ac.in/public/uploads/images/logo.png" alt="Logo" height="60">
+                <img src="https://rntu.ac.in/public/uploads/images/logo.png" alt="Logo" height="60" style="width: auto">
                 <h3 class="mt-5">Hostel Booking Receipt</h3>
                 <small class="text-muted">Generated on: <span id="generatedAt"></span></small>
             </div>
@@ -149,25 +149,25 @@
 
             <!-- Hostel Details -->
             <!-- <div class="mb-4">
-                <h5 class="border-bottom pb-2">📌 Hostel Details</h5>
-                <table class="table table-sm table-bordered">
-                    <tbody>
-                        <tr>
-                            <th>Hostel Name</th>
-                            <td id="hostelName">-</td>
-                            <th>Room Type</th>
-                            <td id="roomType">-</td>
+                    <h5 class="border-bottom pb-2">📌 Hostel Details</h5>
+                    <table class="table table-sm table-bordered">
+                        <tbody>
+                            <tr>
+                                <th>Hostel Name</th>
+                                <td id="hostelName">-</td>
+                                <th>Room Type</th>
+                                <td id="roomType">-</td>
 
-                        </tr>
-                        <tr>
-                            <th>Room Number</th>
-                            <td id="roomNumber">-</td>
-                            <th>Bed</th>
-                            <td id="bed">-</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div> -->
+                            </tr>
+                            <tr>
+                                <th>Room Number</th>
+                                <td id="roomNumber">-</td>
+                                <th>Bed</th>
+                                <td id="bed">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div> -->
 
 
             <!-- Accessories -->
@@ -200,20 +200,21 @@
                         <tr>
                             <th>Order ID</th>
                             <td id="orderId">-</td>
-                             <th>Date & Time</th>
-                            <td id="txnDate">-</td>
+                            <th>Amount Paid</th>
+                            <td id="amount">-</td>
+
                         </tr>
                         <tr>
                             <th>Transaction ID</th>
                             <td id="txnId">-</td>
-                             <th>Amount Paid</th>
-                            <td id="amount">-</td>
+                            <th>Transaction Date</th>
+                            <td id="txnDate">-</td>
                         </tr>
                         <tr>
                             <th>Status</th>
                             <td id="status">-</td>
                         </tr>
-                       
+
                     </tbody>
                 </table>
             </div>
@@ -227,8 +228,9 @@
             <button onclick="window.print()">Print Receipt</button>
         </div>
     </div>
+@endsection
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+@push('scripts')
     <script>
         $(document).ready(function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -265,14 +267,19 @@
                 success: function(response) {
                     console.log("✅ API Response:", response);
 
+                    console.log("Payment Status:", response.status);
                     // if (response.success && response.status === "TXN_SUCCESS") {
-                    if (response.success && response.status === "paid") {
+                    if (response.success) {
 
                         $("#orderId").text(response.order_id);
                         $("#txnId").text(response.txn_id || "N/A");
-                        $("#status").html(`<span class="text-success fw-bold">✅ Successful</span>`);
+                        // $("#status").html(`<span class="text-success fw-bold">✅ Successful</span>`);
+                        $("#status").html(`<span class="text-success fw-bold">` + (response.status ===
+                            "TXN_SUCCESS" ? "✅ Successful" : (response.status === "PENDING" ?
+                                "⏳ Pending" : "❌ Failed")) + `</span>`);
                         $("#amount").text("₹" + response.amount || "N/A");
-                        $("#txnDate").text(new Date().toLocaleString());
+                        $("#txnDate").text(response.txn_date ? response.txn_date : "N/A");
+                        $("#generatedAt").text(new Date().toLocaleString());
 
                         const guest = response.guest || {};
                         $("#sc_n").text(guest.sc_n || "N/A");
@@ -289,7 +296,7 @@
                         $("#guardianContact").text(guest.guardian_no || "N/A");
                         $("#stayDuration").text(guest.stay_duration || "N/A");
                         $("#roomType").text(guest.room_type || "N/A");
-                      
+
                         // Accessories
                         if (Array.isArray(response.accessories) && response.accessories.length > 0) {
                             console.log('hil');
@@ -338,8 +345,8 @@
         //     location.reload();
         // }
     </script>
-
-    {{-- <script>
+@endpush
+{{-- <script>
         function printReceipt() {
             const printWindow = window.open('', '', 'height=600,width=800');
             const receiptHTML = document.getElementById('receipt').outerHTML;
@@ -358,7 +365,7 @@
 
 
 
-    {{-- <div class="text-center">
+{{-- <div class="text-center">
         <button onclick="printReceipt()" class="btn btn-primary text-center">🖨️ Print Receipt</button>
     </div>
     <script>
@@ -402,4 +409,3 @@
             printWindow.close();
         }
     </script> --}}
-@endsection

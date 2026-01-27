@@ -68,14 +68,14 @@
     @stack('navmenu')
 
     <!-- Communication & Alerts -->
-    <p>Communication & Alerts</p>
+    {{-- <p>Communication & Alerts</p>
     <ul class="nav">
         <li>
             <a href="{{ url('/resident/notices') }}" class="{{ Request::is('resident/notices') ? 'active' : '' }}">
                 <span><i class="fas fa-bell"></i></span>Notification & Alerts
             </a>
         </li>
-    </ul>
+    </ul> --}}
 
     <!-- Logout Btn -->
     <ul class="nav">
@@ -83,9 +83,10 @@
         {{-- <li><button type="button" onClick="callLogoutAPI()" class="logout callLogout"> <img
                     src="{{ asset('backend/img/dashboard/side menu/logout.png') }}"> Logout </button></li> --}}
         <li>
-            <button type="button" class="logout logoutBtn">
+            <button type="button" id="logoutBtn" class="logout logoutBtn">
                 <img src="{{ asset('backend/img/dashboard/side menu/logout.png') }}"> Logout
             </button>
+            {{-- <a class="dropdown-item text-danger logoutBtn" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right me-2"></i>Logout</a> --}}
         </li>
 
     </ul>
