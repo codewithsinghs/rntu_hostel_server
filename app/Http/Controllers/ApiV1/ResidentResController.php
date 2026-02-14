@@ -558,7 +558,7 @@ class ResidentResController extends Controller
                 $columnName = $request->input("columns.$orderColumnIndex.data");
             }
 
-           // Log::info("Ordering request → column: {$columnName}, direction: {$orderDirection}");
+            // Log::info("Ordering request → column: {$columnName}, direction: {$orderDirection}");
 
             // Ignore null / object / array columns
             // Normalize column name (remove nested dots like hostel.building)
@@ -710,8 +710,9 @@ class ResidentResController extends Controller
                     $resident->guardian_no
                         ?? optional($resident->profile)->guardian_mobile,
                     'emergency_contact' =>
-                    $resident->emergency_no ?? optional($resident->guest)->emergency_no
-                        ?? optional($resident->profile)->emergency_contact,
+                    $resident->emergency_contact  
+                    // ?? optional($resident->guest)->emergency_no
+                        ?? optional($resident->profile)->emergency_mobile,
 
                     'check_in_date' => $resident->check_in_date,
                     'status'        => $resident->status,
@@ -870,8 +871,9 @@ class ResidentResController extends Controller
                 'parent_contact'  => $resident->parent_no ?? null,
                 'guardian_contact'  => $resident->guardian_no ?? null,
                 'emergency_contact' =>
-                    $resident->emergency_no ?? optional($resident->guest)->emergency_no
-                        ?? optional($resident->profile)->emergency_contact,
+                $resident->emergency_no 
+                // ?? optional($resident->guest)->emergency_no
+                    ?? optional($resident->profile)->emergency_mobile,
                 'fathers_name'  => $resident->fathers_name ?? null,
                 'mothers_name'  => $resident->mothers_name ?? null,
                 'guardians_name'  => $resident->profile->guardian_name ?? null,
@@ -1022,13 +1024,14 @@ class ResidentResController extends Controller
 
     public function update(Request $request, $id)
     {
-        DB::beginTransaction();
+        // dd('here');
+        Log::info('res update', $request->all());
 
-        // Log::info('res update', $request->all());
+        DB::beginTransaction();
         try {
             $resident = Resident::with(['user', 'profile'])->findOrFail($id);
 
-            $validated = $this->validateResident($request, $id);
+            $validated = $this->validateResidentU($request, $id);
 
             /* ---------------------------------
          | Update Resident (only allowed fields)
@@ -1056,11 +1059,13 @@ class ResidentResController extends Controller
             $toUpdate = [
                 'scholar_no'    => $validated['scholar_no']    ?? $resident->scholar_no,
                 'gender'        => $validated['gender']        ?? $resident->gender,
-                'mobile'        => $validated['mobile']        ?? $resident->mobile,
-                'parent_no'     => $validated['parent_no']     ?? $resident->parent_no,
-                'guardian_no'   => $validated['guardian_no']   ?? $resident->guardian_no,
+                'number'        => $validated['mobile']        ?? $resident->number,
+
                 'fathers_name'  => $validated['fathers_name']  ?? $resident->fathers_name,
                 'mothers_name'  => $validated['mothers_name']  ?? $resident->mothers_name,
+
+                'parent_no'     => $validated['parent_contact']     ?? $resident->parent_no,
+                'guardian_no'   => $validated['guardian_contact']   ?? $resident->guardian_no,
                 'check_in_date' => $validated['check_in_date'] ?? $resident->check_in_date,
                 'check_out_date' => $validated['check_out_date'] ?? $resident->check_out_date,
                 'bed_id'        => $validated['bed_id']        ?? $resident->bed_id,
@@ -1089,13 +1094,13 @@ class ResidentResController extends Controller
 
                 $userData = [];
                 if (isset($validated['name'])) {
-                    $userData['name'] = $validated['name'];
+                    $userData['name'] = $validated['name'] ?? $resident->name;
                 }
                 if (isset($validated['email'])) {
-                    $userData['email'] = $validated['email'];
+                    $userData['email'] = $validated['email'] ?? $resident->email;
                 }
                 if (isset($validated['mobile'])) {
-                    $userData['mobile'] = $validated['mobile'];
+                    $userData['mobile'] = $validated['mobile'] ?? $resident->number;
                 }
                 if (!empty($userData) && $resident->user) {
                     $resident->user->update($userData);
@@ -1152,12 +1157,106 @@ class ResidentResController extends Controller
                 ];
 
                 // Prepare only allowed fields from validated data
-                $profileData = [];
-                foreach ($allowedProfileFields as $field) {
-                    if (array_key_exists($field, $validated)) {
-                        $profileData[$field] = $validated[$field];
-                    }
-                }
+                // $profileData = [];
+                // foreach ($allowedProfileFields as $field) {
+                //     if (array_key_exists($field, $validated)) {
+                //         $profileData[$field] = $validated[$field];
+                //     }
+                // }
+
+                // Map validated keys to actual profile fields if names differ
+                // $fieldMapping = [
+                //     'scholar_no' => 'scholar_number',
+                //     'name' => 'name',
+                //     'email' => 'email',
+                //     'mobile' => 'mobile',
+                //     'alternate_mobile' => 'alternate_mobile',
+                //     'gender' => 'gender',
+
+                //     'father_name' => 'fathers_name',
+                //     'mother_name' => 'mothers_name',
+                //     'parent_contact' => 'parent_contact',
+                //     'guardian_name' => 'guardian_name',
+                //     'guardian_contact' => 'guardian_mobile',
+
+                //     'fathers_mobile' => 'father_mobile',
+                //     'mothers_mobile' => 'mother_mobile',
+
+                //     'guardian_relation' => 'mother_mobile',
+                //     'emergency_name' => 'mother_mobile',
+                //     'emergency_relation' => 'mother_mobile',
+                //     'emergency_mobile' => 'mother_mobile',
+
+                //     aadhaar_number
+                //     aadhaar_document
+                //     image
+                //     signature
+
+                //     course
+                //     branch
+                //     semester
+                //     admission_year
+                //     is_hosteler
+                //     hostel_status
+                //     check_in_date
+                //     check_out_date
+                //     blood_group
+                //     medical_conditions
+
+
+                //     'emergency_contact' => 'dob',
+
+                // ];
+
+                // $profileData = $this->normalizeValidatedData($validated, $allowedProfileFields, $fieldMapping);
+                // if (!empty($profileData)) {
+                //     $resident->profile->update($profileData);
+                // }
+                // Normalize validated data keys
+                // $normalizedData = [];
+                // foreach ($validated as $key => $value) {
+                //     $mappedKey = $fieldMapping[$key] ?? $key; // use mapped name if exists 
+                //     $normalizedData[$mappedKey] = $value;
+                // }
+
+                // // Prepare only allowed fields from normalized data
+                // $profileData = [];
+                // foreach ($allowedProfileFields as $field) {
+                //     if (array_key_exists($field, $normalizedData)) {
+                //         $profileData[$field] = $normalizedData[$field];
+                //     }
+                // }
+
+
+                $profileData = [
+                    'name'    => $validated['name']    ?? $resident->name,
+                    'scholar_number'    => $validated['scholar_no']    ?? $resident->scholar_no,
+                    'gender'        => $validated['gender']        ?? $resident->profile->gender,
+                    'mobile'        => $validated['mobile']        ?? $resident->number,
+                    'email'        => $validated['email']        ?? $resident->email,
+
+                    'father_name'  => $validated['fathers_name']  ?? $resident->fathers_name,
+                    'mother_name'  => $validated['mothers_name']  ?? $resident->mothers_name,
+
+                    // 'father_mobile'  => $validated['fathers_name']  ?? $resident->fathers_name,
+                    // 'mother_mobile'  => $validated['mothers_name']  ?? $resident->mothers_name,
+
+                    'parent_mobile'     => $validated['parents_contact']     ?? $resident->parent_no,
+
+                    'guardian_name'     => $validated['guardian_name']     ?? $resident->guardian_name,
+                    'guardian_mobile'   => $validated['guardian_contact']   ?? $resident->guardian_no,
+                    'guardian_relation'   => $validated['guardian_relation']   ?? $resident->profile->guardian_relation,
+
+                    'emergency_name'     => $validated['emergency_name']     ?? $resident->profile->emergency_name,
+                    'emergency_relation'   => $validated['emergency_relation']   ?? $resident->profile->emergency_relation,
+                    'emergency_mobile'   => $validated['emergency_contact']   ?? $resident->profile->emergency_mobile,
+
+                    // 'check_in_date' => $validated['check_in_date'] ?? $resident->profile->check_in_date,
+                    // 'check_out_date' => $validated['check_out_date'] ?? $resident->profile->check_out_date,
+                    // 'bed_id'        => $validated['bed_id']        ?? $resident->profile->bed_id,
+                    // 'status'        => $validated['status']        ?? $resident->profile->status,
+
+                ];
 
                 // Update profile safely
                 if (!empty($profileData)) {
@@ -1165,19 +1264,19 @@ class ResidentResController extends Controller
                 }
 
                 // Optional: also update related user if fields exist
-                $userData = [];
-                if (isset($validated['name'])) {
-                    $userData['name'] = $validated['name'];
-                }
-                if (isset($validated['email'])) {
-                    $userData['email'] = $validated['email'];
-                }
-                if (isset($validated['mobile'])) {
-                    $userData['mobile'] = $validated['mobile'];
-                }
-                if (!empty($userData) && $resident->user) {
-                    $resident->user->update($userData);
-                }
+                // $userData = [];
+                // if (isset($validated['name'])) {
+                //     $userData['name'] = $validated['name'];
+                // }
+                // if (isset($validated['email'])) {
+                //     $userData['email'] = $validated['email'];
+                // }
+                // if (isset($validated['mobile'])) {
+                //     $userData['mobile'] = $validated['mobile'];
+                // }
+                // if (!empty($userData) && $resident->user) {
+                //     $resident->user->update($userData);
+                // }
             }
 
             DB::commit();
@@ -1479,6 +1578,57 @@ class ResidentResController extends Controller
         ]);
     }
 
+    protected function validateResidentU(Request $request, $id = null)
+    {
+        return $request->validate([
+            'scholar_no'  => 'sometimes|required|string|max:50|unique:residents,scholar_no,' . $id,
+            'name'        => 'sometimes|required|string|max:255',
+            'email'       => 'sometimes|required|email|unique:users,email,' . ($id ? optional(Resident::find($id))->user_id : ''),
+            'mobile'      => 'sometimes|required|string|max:15',
+            'gender'      => 'sometimes|required|in:male,female,other',
+
+            'fathers_name'   => 'sometimes|nullable|string|max:255',
+            'mothers_name'   => 'sometimes|nullable|string|max:255',
+
+            'parent_contact'   => 'sometimes|nullable|string|max:15',
+
+            'guardian_name'   => 'sometimes|nullable|string|max:255',
+            'guardian_contact' => 'sometimes|nullable|string|max:15',
+
+            'emergency_contact' => 'sometimes|nullable|string|max:15',
+
+            // 'check_in_date'  => 'sometimes|nullable|date',
+            // 'check_out_date' => 'sometimes|nullable|date|after_or_equal:check_in_date',
+            'check_in_date'  => 'sometimes|nullable|date_format:Y-m-d\TH:i',
+            'check_out_date' => 'sometimes|nullable|date_format:Y-m-d\TH:i|after_or_equal:check_in_date',
+            // 'check_in_date'  => 'sometimes|nullable|datetime',
+            // 'check_out_date' => 'sometimes|nullable|datetime|after_or_equal:check_in_date',
+
+            // 'check_in_date'  => 'sometimes|nullable|date_format:d M Y h:i A',
+            // 'check_out_date' => 'sometimes|nullable|date_format:d M Y h:i A|after_or_equal:check_in_date',
+
+            'bed_id'         => 'sometimes|nullable|integer|exists:beds,id',
+            'status'         => 'sometimes|required|in:active,inactive,checkedout',
+        ]);
+    }
+
+    function normalizeValidatedData(array $validated, array $allowedFields, array $fieldMapping = [])
+    {
+        $normalizedData = [];
+        foreach ($validated as $key => $value) {
+            // Normalize key to snake_case 
+            $snakeKey = Str::snake($key);
+
+            // Apply mapping if defined 
+            $mappedKey = $fieldMapping[$snakeKey] ?? $snakeKey;
+
+            // Only keep if allowed 
+            if (in_array($mappedKey, $allowedFields)) {
+                $normalizedData[$mappedKey] = $value;
+            }
+        }
+        return $normalizedData;
+    }
 
 
     /**

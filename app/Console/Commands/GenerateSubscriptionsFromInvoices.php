@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Carbon\Carbon;
 use App\Models\Invoice;
+use App\Models\Subscription;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use App\Models\ResidentSubscription;
@@ -181,9 +182,14 @@ class GenerateSubscriptionsFromInvoices extends Command
     {
         $created = 0;
         $updated = 0;
+        $today  = now()->startOfDay();
 
         Invoice::with('items')
             ->whereNotNull('resident_id')
+            // ->where(function ($q) use ($today) {
+            //     $q->whereNull('check_out_date')
+            //         ->orWhere('check_out_date', '>', $today);
+            // })
             ->chunk(50, function ($invoices) use (&$created, &$updated) {
 
                 foreach ($invoices as $invoice) {
@@ -194,7 +200,36 @@ class GenerateSubscriptionsFromInvoices extends Command
                             continue;
                         }
 
-                        $subscription = ResidentSubscription::where('resident_id', $invoice->resident_id)
+                        // dd(
+                        //     $item->item_id,
+                        //     $item->item_type,
+                        //     $item->description
+                        // );
+
+                        // IDs to skip if they are accessories 
+                        // $skipIds = [17, 18, 19, 21];
+                        // if ($item->item_type === 'accessory' && in_array($item->item_id, $skipIds, true)) {
+                        //     continue;
+                        // }
+                        // $isAccessory = strtolower($item->item_type) === 'accessory';
+                        // // $isFeeLike   = str_contains(strtolower($item->item_type), 'fee');
+
+                        // $skipIds = [17, 18, 19, 21];
+
+                        // if (!$isAccessory && in_array((int)$item->item_id, $skipIds, true)) {
+                        //     continue;
+                        // }
+
+                        // 🚫 Skip specific accessories
+                        $skipAccessoryIds = [17, 18, 19, 21];
+                        if (
+                            $item->item_type === 'accessory'
+                            && in_array((int)$item->item_id, $skipAccessoryIds, true)
+                        ) {
+                            continue;
+                        }
+
+                        $subscription = Subscription::where('resident_id', $invoice->resident_id)
                             ->where('service_code', $item->item_id)
                             ->first();
 
@@ -229,7 +264,7 @@ class GenerateSubscriptionsFromInvoices extends Command
 
                         if (!$subscription) {
 
-                            ResidentSubscription::create([
+                            Subscription::create([
                                 'resident_id'  => $invoice->resident_id,
                                 'invoice_id'  => $invoice->id,
                                 'invoice_item_id'  => $item->item_id,

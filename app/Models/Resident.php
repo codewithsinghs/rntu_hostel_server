@@ -2,11 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Facades\Log;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+
+use App\Models\Bed;
+use App\Models\Finance\ResidentLedger;
+use App\Models\Invoice;
+use App\Models\Profile;
+use App\Models\ProfileHistory;
 use App\Models\Scopes\ResidentVisibilityScope;
+use App\Models\Subscription;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 
 class Resident extends Model
 {
@@ -52,10 +61,10 @@ class Resident extends Model
 
 
 
-    protected static function booted()
-    {
-        static::addGlobalScope(new ResidentVisibilityScope);
-    }
+    // protected static function booted()
+    // {
+    //     static::addGlobalScope(new ResidentVisibilityScope);
+    // }
     //     Bypass Scope (Only When Needed)
 
     // For super admin reports / exports:
@@ -94,14 +103,36 @@ class Resident extends Model
         return $this->hasOne(Profile::class);
     }
 
-    public function invoices()
+    // public function invoices()
+    public function invoices(): HasMany
     {
-        return $this->hasMany(\App\Models\Invoice::class, 'resident_id');
+        // return $this->hasMany(\App\Models\Invoice::class, 'resident_id');
+        return $this->hasMany(Invoice::class);
     }
 
-    public function subscription()
+    public function invoiceItems()
     {
-        return $this->hasOne(\App\Models\Subscription::class, 'resident_id');
+        return $this->hasManyThrough(
+            \App\Models\InvoiceItem::class,
+            \App\Models\Invoice::class,
+            'resident_id',     // Foreign key on invoices
+            'invoice_id',      // Foreign key on invoice_items
+            'id',              // Local key on residents
+            'id'               // Local key on invoices
+        );
+    }
+
+
+    // public function subscription()
+    public function subscriptions(): HasMany
+    {
+        // return $this->hasOne(\App\Models\Subscription::class, 'resident_id');
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function ledgers()
+    {
+        return $this->hasMany(ResidentLedger::class);
     }
 
     public function bed()

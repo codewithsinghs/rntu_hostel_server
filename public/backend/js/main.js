@@ -402,3 +402,125 @@ function InitializeDatatable() {
         }
     });
 }
+
+
+
+// DataTable End
+
+
+// // Common date formatter for your layout
+// function formatDateForInput(dateStr) {
+//     if (!dateStr) return '';
+
+//     // Try parsing with native Date
+//     const parsed = new Date(dateStr);
+
+//     // If invalid, try fallback (like "12 Jan 2026")
+//     if (isNaN(parsed)) {
+//         // Use dayjs or moment for flexible parsing
+//         return dayjs(dateStr, ["DD MMM YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]).format("YYYY-MM-DD");
+//     }
+
+//     // Return in editable <input type="date"> format
+//     return parsed.toISOString().split('T')[0]; // "YYYY-MM-DD"
+// }
+
+
+
+
+// Common date formatter for your layout
+function formatDateForInput(dateStr) {
+    if (!dateStr) return '';
+
+    // Detect if string looks like UTC/ISO format
+    const isUTCFormat = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(dateStr);
+
+    if (isUTCFormat) {
+        // Parse with native Date and normalize to YYYY-MM-DD
+        const parsed = new Date(dateStr);
+        if (!isNaN(parsed)) {
+            return parsed.toISOString().split('T')[0]; // "YYYY-MM-DD"
+        }
+    }
+
+    // Otherwise, handle human-readable formats safely
+    try {
+        return dayjs(dateStr, ["DD MMM YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]).format("YYYY-MM-DD");
+    } catch (e) {
+        return ''; // fallback if parsing fails
+    }
+}
+
+
+// For display (pretty format)
+function formatDateForDisplay(dateStr) {
+    if (!dateStr) return '';
+    return dayjs(dateStr).format("DD MMM YYYY"); // "12 Jan 2026"
+}
+
+// For duration calculation
+function calculateDuration(start, end) {
+    if (!start || !end) return null;
+    const s = dayjs(formatDateForInput(start));
+    const e = dayjs(formatDateForInput(end));
+    return e.diff(s, 'day') + 1;
+}
+
+// For Text truncate expandable
+function formatExpandable(text) {
+    if (!text) return '<span class="text-muted">N/A</span>';
+    let safeText = $('<div>').text(text).html(); // escape HTML
+    if (safeText.length > 50) {
+        let shortText = safeText.substring(0, 50) + '...';
+        return `
+                    <span class="short-text">${shortText}</span>
+                    <a href="javascript:void(0)" class="toggle-text">Show more</a>
+                    <span class="full-text d-none">${safeText}</span>
+                `;
+    }
+    return safeText;
+}
+
+// For Text truncate expandable - Toggle Logic
+$(document).on('click', '.toggle-text', function () {
+    let $link = $(this);
+    let $container = $link.closest('div'); // scope to the current cell container
+    let $short = $container.find('.short-text');
+    let $full = $container.find('.full-text');
+
+    if ($full.hasClass('d-none')) {
+        $short.hide();
+        $full.removeClass('d-none');
+        $link.text('Show less');
+    } else {
+        $short.show();
+        $full.addClass('d-none');
+        $link.text('Show more');
+    }
+});
+
+
+
+// Common date formatter for your layout End
+
+// document.addEventListener("DOMContentLoaded", function () {
+//     document.querySelectorAll(".truncate").forEach(el => {
+//         const fullText = el.textContent.trim();
+//         const limit = el.getAttribute("data-limit") || 50;
+
+//         if (fullText.length > limit) {
+//             const truncated = fullText.substring(0, limit) + "...";
+//             el.textContent = truncated;
+
+//             el.addEventListener("click", function () {
+//                 if (el.textContent.endsWith("...")) {
+//                     el.textContent = fullText + " (show less)";
+//                 } else {
+//                     el.textContent = truncated;
+//                 }
+//             });
+//         }
+//     });
+// });
+
+

@@ -407,9 +407,10 @@ class CheckoutController extends Controller
 
     public function adminAccessoryChecking(Request $request, $residentId)
     {
+        Log::info('checkout acc submission from admin', $request->all());
         $validator = Validator::make($request->all(), [
             'accessories' => 'required|array',
-            'accessories.*.accessory_head_id' => 'required|exists:accessory_heads,id',
+            // 'accessories.*.accessory_head_id' => 'required|exists:accessory_heads,id',
             'accessories.*.is_returned' => 'required|boolean',
             'accessories.*.debit_amount' => 'nullable|numeric|min:0',
             'accessories.*.remark' => 'nullable|string'

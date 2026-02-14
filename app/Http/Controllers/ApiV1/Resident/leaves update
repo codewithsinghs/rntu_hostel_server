@@ -1,0 +1,57 @@
+Using Eloquent Update (One‑off Script)
+You can run this in a tinker session or inside a controller/command:
+
+php
+use Illuminate\Support\Str;
+use App\Models\Leave;
+
+Leave::whereNull('token')->orWhere('token', '')
+    ->chunkById(100, function ($leaves) {
+        foreach ($leaves as $leave) {
+            $leave->token = Str::uuid();
+            $leave->save();
+        }
+    });
+
+
+    Using a Raw Query (Fast Bulk Update)
+If you don’t need per‑row logic and just want to fill all missing tokens quickly:
+
+php
+DB::table('leaves')
+    ->whereNull('token')
+    ->orWhere('token', '')
+    ->update(['token' => Str::uuid()]);
+⚠️ Note: This will set the same UUID for all rows in one query.
+If you want unique UUIDs per row, you must loop (like in method 1).
+
+
+Artisan Command (Reusable)
+Create a command php artisan make:command GenerateLeaveTokens:
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use Illuminate\Support\Str;
+use App\Models\Leave;
+
+class GenerateLeaveTokens extends Command
+{
+    protected $signature = 'leaves:generate-tokens';
+    protected $description = 'Generate UUID tokens for leaves without tokens';
+
+    public function handle()
+    {
+        Leave::whereNull('token')->orWhere('token', '')
+            ->chunkById(100, function ($leaves) {
+                foreach ($leaves as $leave) {
+                    $leave->token = Str::uuid();
+                    $leave->save();
+                    $this->info("Generated token for Leave ID: {$leave->id}");
+                }
+            });
+
+        $this->info('All missing tokens have been generated successfully.');
+    }
+}
+php artisan leaves:generate-tokens

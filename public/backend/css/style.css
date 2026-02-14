@@ -1,0 +1,18 @@
+
+.truncate {
+    display: inline-block;
+    max-width: 250px;   /* adjust width as needed */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.square-tooltip .tooltip-inner {
+  border-radius: 0;       /* square corners */
+  max-width: 300px;       /* control width */
+  white-space: normal;    /* allow wrapping */
+  text-align: left;
+}
+

@@ -265,11 +265,11 @@ class CheckoutController extends Controller
 
             if ($checkouts->isEmpty()) {
                 return response()->json([
-                    'success' => false,
+                    'success' => true,
                     'message' => 'No checkout requests found.',
                     'data' => null,
                     'errors' => null,
-                ], 404);
+                ], 200);
             }
 
             $formattedCheckouts = $checkouts->map(function ($checkout) {

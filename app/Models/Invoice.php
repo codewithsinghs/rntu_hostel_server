@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Invoice extends Model
 {
@@ -49,14 +51,16 @@ class Invoice extends Model
         return $this->belongsTo(Guest::class);
     }
 
-    public function items()
+    // public function items()
+    public function items(): HasMany
     {
         // return $this->hasMany(InvoiceItem::class);
-        return $this->hasMany(
-            \App\Models\InvoiceItem::class,
-            'invoice_id',   // FK
-            'id'            // PK
-        );
+        // return $this->hasMany(
+        //     \App\Models\InvoiceItem::class,
+        //     'invoice_id',   // FK
+        //     'id'            // PK
+        // );
+        return $this->hasMany(InvoiceItem::class);
     }
 
     public function recomputeStatus(): void
@@ -77,7 +81,8 @@ class Invoice extends Model
     {
         return $this->hasMany(Payment::class);
     }
-    public function resident()
+    // public function resident()
+    public function resident(): BelongsTo
     {
         return $this->belongsTo(Resident::class);
     }
@@ -106,6 +111,18 @@ class Invoice extends Model
         //     'invoice_number' => $invoice_number,
         // ];
         return  $invoice_number;
+    }
+
+    /* ===================== HELPERS ===================== */
+
+    public function recalculateTotals(): void
+    {
+        $total = $this->items()->sum('total_amount');
+
+        $this->update([
+            'total_amount' => $total,
+            'remaining_amount' => $total - ($this->paid_amount ?? 0),
+        ]);
     }
 
     // public function billable()
@@ -190,4 +207,16 @@ class Invoice extends Model
     //         $item->update(['remarks' => $remarks]);
     //     }
     // }
+
+
+
+    // For Checkout
+    public function scopeFinancial($query)
+    {
+        return $query->whereNotIn('status', [
+            'draft',
+            'cancelled',
+            'void'
+        ]);
+    }
 }

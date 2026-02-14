@@ -2,13 +2,24 @@
 
 
 @section('content')
+    <style>
+        .toggle-text {
+            color: blue;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .toggle-text:hover {
+            color: darkblue;
+        }
+    </style>
     <!-- top-breadcrumbs -->
     <div class="top-breadcrumbs">
         <div class="breadcrumbs"><a>Leaves Management</a></div>
     </div>
 
     <!-- Card -->
-    <section class="common-con-tainer">
+    {{-- <section class="common-con-tainer">
         <div class="common-content">
             <div class="common-overview">
                 <div class="breadcrumbs"><a href="">Leaves Overview</a></div>
@@ -16,8 +27,8 @@
                 <div class="card-ds-bottom">
                     <div class="card-d">
                         <div class="card-d-content">
-                            <p>Total Departments</p>
-                            <h3 id="stat-faculties">500</h3>
+                            <p>Total Leave Requests</p>
+                            <h3 id="stat-leave_requests">500</h3>
                         </div>
                         <div class="card-d-image">
                             <img src="{{ asset('backend/img/Room Management/1.png') }}" alt="">
@@ -34,8 +45,8 @@
                     </div>
                     <div class="card-d">
                         <div class="card-d-content">
-                            <p>Total Courses</p>
-                            <h3 id="stat-courses">50</h3>
+                            <p>Total Leave Requests</p>
+                            <h3 id="stat-leave_requests">50</h3>
                         </div>
                         <div class="card-d-image">
                             <img src="{{ asset('backend/img/Room Management/3.png') }}" alt="">
@@ -45,7 +56,7 @@
 
             </div>
         </div>
-    </section>
+    </section> --}}
 
     <section class="common-con-tainer">
         <div class="common-content">
@@ -53,10 +64,10 @@
                 <div class="top-breadcrumbs d-flex justify-content-between align-items-center">
                     <div class="breadcrumbs p-0"><a class="p-0">Leaves List</a></div>
                     <!-- <button class="add-btn" type="button" data-bs-toggle="modal" data-bs-target="#Faculty">+ Add
-                                                                                                                                                                                                                                                                                                                                                                                                                                Faculty</button> -->
-                    <button class="btn btn-primary btn-sm" onclick="RecordsModal.openCreate()">
-                        <i class="fa fa-plus"></i> Add Course
-                    </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            Faculty</button> -->
+                    {{-- <button class="btn btn-primary btn-sm" onclick="RecordsModal.openCreate()">
+                        <i class="fa fa-plus"></i> Request Leave
+                    </button> --}}
                 </div>
 
                 <div class="table-responsive">
@@ -72,7 +83,7 @@
                                 {{-- <th>Reason</th> --}}
                                 <th>From / To Date</th>
                                 {{-- <th>To </th> --}}
-                                <th>Attachment </th>
+                                {{-- <th>Attachment </th> --}}
                                 {{-- <th>Hod Status </th>
                                 <th>Hod Remark </th>
                                 <th>Hod Approved At </th> --}}
@@ -181,13 +192,19 @@
                         </div> --}}
                         <div class="mb-3">
                             <label class="form-label">Reason</label>
-                            <textarea rows="2" class="form-control" id="reason" name="reason"></textarea>
+                            <textarea rows="3" class="form-control" id="reason" name="reason"></textarea>
+                            <small>
+                                <div class="form-text">Please provide a short reason (max 50 characters).</div>
+                            </small>
                             <div class="invalid-feedback" id="reason_error"></div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Description</label>
-                            <textarea rows="2" class="form-control" id="description" name="description"></textarea>
+                            <textarea rows="3" class="form-control" id="description" name="description"></textarea>
+                            <small>
+                                <div class="form-text">Please provide a short reason (max 500 characters).</div>
+                            </small>
                             <div id="description_error" class="invalid-feedback"></div>
                         </div>
 
@@ -270,6 +287,23 @@
 
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Attachment Modal -->
+    <div class="modal fade" id="attachmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl"> <!-- large modal -->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Attachment Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- File will be injected here -->
+                    <iframe id="attachmentFrame" src="" width="100%" height="600px"
+                        style="border:none;"></iframe>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
@@ -401,22 +435,97 @@
                         //     // title: 'reason',
                         //     // defaultContent: ''
                         // },
+
+                        // {
+                        //     // data: null,
+                        //     data: 'type', // Add this line
+                        //     title: 'Leave Details',
+                        //     render: function(data, type, row) {
+                        //         let leaveType = row.type || '<span class="text-muted">N/A</span>';
+                        //         let reason = row.reason || '<span class="text-muted">N/A</span>';
+                        //         let description = row.description || '<span class="text-muted">N/A</span>';
+
+                        //         return `
+                    //             <div>
+                    //                 Type: ${leaveType} <br>
+                    //                 Reason: ${reason}   <br>
+                    //                 Description: ${description}   <br>
+                    //             </div>
+                    //         `;
+                        //     },
+                        //     defaultContent: '<span class="text-muted">N/A</span>'
+                        // },
+                        // {
+                        //     data: 'type',
+                        //     title: 'Leave Details',
+                        //     render: function(data, type, row) {
+                        //         function formatExpandable(text) {
+                        //             if (!text) return '<span class="text-muted">N/A</span>';
+                        //             let safeText = $('<div>').text(text).html(); // escape HTML
+                        //             if (safeText.length > 50) {
+                        //                 let shortText = safeText.substring(0, 50) + '...';
+                        //                 return ` <span class="short-text">${shortText}</span> <a href="javascript:void(0)" class="toggle-text">Show more</a> <span class="full-text d-none">${safeText}</span> `;
+                        //             }
+                        //             return safeText;
+                        //         }
+                        //         let leaveType = row.type || '<span class="text-muted">N/A</span>';
+                        //         let reason = formatExpandable(row.reason);
+                        //         let description = formatExpandable(row.description);
+                        //         if (!row.attachment) { 
+                        //             // No file in DB 
+                        //             // return '<span class="text-muted">No Attachment</span>';
+                        //         }
+                        //         // let attachment = row.attachment ? `<a href="/storage/${row.attachment}" target="_blank">View Attachment</a>` : '<span class="text-muted">No Attachment</span>';
+                        //         // Encode filename before sending to API 
+                        //         let encoded = btoa(row.attachment); // Base64 encode in JS
+                        //         // return `<a href="/api/download/${encoded}" target="_blank">View Attachment</a>`;
+                        //         return ` <div> <strong>Type:</strong> ${leaveType} <br> <strong>Reason:</strong> ${reason} <br> <strong>Description:</strong> ${description} <br>  
+                    //         <a href="/api/files/${encoded}" target="_blank">View Attachment</a>
+                    //          `;
+                        //     },
+                        //     defaultContent: '<span class="text-muted">N/A</span>'
+                        // },
+
                         {
-                            // data: null,
-                            data: 'type', // Add this line
+                            data: 'type',
                             title: 'Leave Details',
                             render: function(data, type, row) {
+                                function formatExpandable(text) {
+                                    if (!text) return '<span class="text-muted">N/A</span>';
+                                    let safeText = $('<div>').text(text).html(); // escape HTML
+                                    if (safeText.length > 50) {
+                                        let shortText = safeText.substring(0, 50) + '...';
+                                        return `
+                                            <span class="short-text">${shortText}</span>
+                                            <a href="javascript:void(0)" class="toggle-text">Show more</a>
+                                            <span class="full-text d-none">${safeText}</span>
+                                        `;
+                                    }
+                                    return safeText;
+                                }
+
                                 let leaveType = row.type || '<span class="text-muted">N/A</span>';
-                                let reason = row.reason || '<span class="text-muted">N/A</span>';
-                                let description = row.description || '<span class="text-muted">N/A</span>';
+                                let reason = formatExpandable(row.reason);
+                                let description = formatExpandable(row.description);
+
+                                // ✅ Only build attachment link if file exists
+                                let attachment;
+                                if (row.attachment && row.attachment.trim() !== '') {
+                                    let encoded = btoa(row.attachment); // Base64 encode
+                                    attachment =
+                                        `<a href="/files/${encoded}" target="_blank">View Attachment</a>`;
+                                } else {
+                                    attachment = '<span class="text-muted">No Attachment</span>';
+                                }
 
                                 return `
-                                        <div>
-                                            Type: ${leaveType} <br>
-                                            Reason: ${reason}   <br>
-                                            Description: ${description}   <br>
-                                        </div>
-                                    `;
+                                    <div>
+                                        <strong>Type:</strong> ${leaveType} <br>
+                                        <strong>Reason:</strong> ${reason} <br>
+                                        <strong>Description:</strong> ${description} <br>
+                                        <strong>Attachment:</strong> ${attachment}
+                                    </div>
+                                `;
                             },
                             defaultContent: '<span class="text-muted">N/A</span>'
                         },
@@ -446,13 +555,25 @@
                             },
                             defaultContent: '<span class="text-muted">N/A</span>'
                         },
-                        {
-                            data: 'attachment',
-                            title: 'Attachment',
-                            render: file => file ?
-                                `<a href="${file}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>` :
-                                '<span class="text-muted">No File</span>'
-                        },
+                        // {
+                        //     data: 'attachment',
+                        //     title: 'Attachment',
+                        //     render: file => file ?
+                        //         `<a href="${file}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>` :
+                        //         '<span class="text-muted">No File</span>'
+                        // },
+                        // {
+                        //     data: 'attachment',
+                        //     title: 'Attachment',
+                        //     render: function(file) {
+                        //         if (file && file.trim() !== '') {
+                        //             let encoded = btoa(file); // Base64 encode
+                        //             return `<a href="/files/${encoded}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>`;
+                        //         } else {
+                        //             return '<span class="text-muted">No Attachment</span>';
+                        //         }
+                        //     }
+                        // },
 
                         // {
                         //     data: 'hod_status',
@@ -614,24 +735,35 @@
                                 const status = row.hod_status ?? 'pending';
                                 const remarks = row.hod_remarks ?? '';
                                 const approvedAt = row.hod_action_at ?? '';
+                                // ✅ Only build attachment link if file exists
+                                // let attachment;
+                                // if (row.hod_attachment && row.hod_attachment.trim() !== '') {
+                                //     let encoded = btoa(row.hod_attachment); // Base64 encode
+                                //     attachment =
+                                //         `<a href="/files/${encoded}" target="_blank">View Attachment</a>`;
+                                // } else {
+                                //     attachment = '<span class="text-muted">No Attachment</span>';
+                                // }
+
 
                                 let html = `
                                     <div class="d-flex flex-column gap-1">
                                         <div>${badge(status)}</div>
 
                                         ${approvedAt ? `
-                                                                <small class="text-muted">
-                                                                    <i class="bi bi-clock"></i> ${approvedAt}
-                                                                </small>
-                                                            ` : ''}
+                                                                                            <small class="text-muted">
+                                                                                                <i class="bi bi-clock"></i> ${approvedAt}
+                                                                                            </small>
+                                                                                        ` : ''}
 
                                         ${remarks ? `
-                                                                <small class="text-truncate text-secondary"
-                                                                    style="max-width: 220px"
-                                                                    title="${remarks}">
-                                                                    <i class="bi bi-chat-left-text"></i> ${remarks}
-                                                                </small>
-                                                            ` : ''}
+                                                                                            <small class="text-truncate text-secondary"
+                                                                                                style="max-width: 220px"
+                                                                                                title="${remarks}">
+                                                                                                <i class="bi bi-chat-left-text"></i> ${remarks}
+                                                                                            </small>
+                                                                                        ` : ''}
+                                         ${row.hod_attachment && row.hod_attachment.trim() !== '' ? ` <small> <a href="/files/${btoa(row.hod_attachment)}" target="_blank">View Attachment</a> </small> ` : ''}
                                 `;
 
                                 // ✅ HOD buttons
@@ -794,979 +926,1019 @@
                                     const status = row.admin_status ?? 'pending';
                                     const remarks = row.admin_remarks ?? '';
                                     const approvedAt = row.admin_action_at ?? '';
+                                    let encoded = btoa(row.admin_attachment);
 
                                     let html = `
                                         <div class="d-flex flex-column gap-1">
                                             <div>${badge(status)}</div>
 
                                             ${approvedAt ? `
-                                                                    <small class="text-muted">
-                                                                        <i class="bi bi-clock"></i> ${approvedAt}
-                                                                    </small>
-                                                                ` : ''}
+                                                                                                <small class="text-muted">
+                                                                                                    <i class="bi bi-clock"></i> ${approvedAt}
+                                                                                                </small>
+                                                                                            ` : ''}
 
                                             ${remarks ? `
-                                                                    <small class="text-truncate text-secondary"
-                                                                        style="max-width: 220px"
-                                                                        title="${remarks}">
-                                                                        <i class="bi bi-chat-left-text"></i> ${remarks}
-                                                                    </small>
-                                                                ` : ''}
+                                                                                                <small class="text-truncate text-secondary"
+                                                                                                    style="max-width: 220px"
+                                                                                                    title="${remarks}">
+                                                                                                    <i class="bi bi-chat-left-text"></i> ${remarks}
+                                                                                                </small>
+                                                                                            ` : ''}
+                                            ${row.admin_attachment && row.admin_attachment.trim() !== '' ? 
+                                            ` <small> <a href="/files/${btoa(row.admin_attachment)}" target="_blank">View Attachment</a> </small>
+                                                
+                                            ` : ''}
                                     `;
+                                    // ` < small > < a href = "javascript:void(0)" onclick = "openAttachmentModal('${encoded}')" > View Attachment </a> </small > 
+                                // ✅ Admin buttons
+                                if (
+                                    CURRENT_USER_ROLE?.includes('admin') &&
+                                    row.hod_status === 'approved' &&
+                                    row.admin_status === 'pending'
+                                ) {
+                                    html += `
+                                                <div class="mt-1">
+                                                    <button class="btn btn-sm btn-success me-1"
+                                                        onclick="LeaveActions.open(${row.id}, 'admin_approve')">
+                                                        Approve
+                                                    </button>
 
-                                    // ✅ Admin buttons
-                                    if (
-                                        CURRENT_USER_ROLE?.includes('admin') &&
-                                        row.hod_status === 'approved' &&
-                                        row.admin_status === 'pending'
-                                    ) {
-                                        html += `
-                                            <div class="mt-1">
-                                                <button class="btn btn-sm btn-success me-1"
-                                                    onclick="LeaveActions.open(${row.id}, 'admin_approve')">
-                                                    Approve
-                                                </button>
-
-                                                <button class="btn btn-sm btn-danger"
-                                                    onclick="LeaveActions.open(${row.id}, 'admin_reject')">
-                                                    Reject
-                                                </button>
-                                            </div>
-                                        `;
-                                    }
-
-                                    html += `</div>`;
-                                    return html;
+                                                    <button class="btn btn-sm btn-danger"
+                                                        onclick="LeaveActions.open(${row.id}, 'admin_reject')">
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            `;
                                 }
 
-                                return row.admin_status || 'pending';
+                                html += `</div>`;
+                                return html;
                             }
-                        },
 
-                        // {
-                        //     data: 'admin_attachment',
-                        //     title: 'Admin Attachment',
-                        //     render: file => file ?
-                        //         `<a href="${file}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>` :
-                        //         '<span class="text-muted">No File</span>'
-                        // },
-                        {
-                            data: 'status',
-                            title: 'Status',
-                            render: s => badge(s)
-                        },
-                        // {
-                        //     data: null,
-                        //     title: 'Actions',
-                        //     orderable: false,
-                        //     searchable: false,
-                        //     render: function(data) {
-
-                        //         const roles = CURRENT_USER_ROLE || [];
-
-                        //         let buttons = '';
-
-                        //         // HOD actions
-                        //         if (roles.includes('hod') && data.hod_status === 'pending') {
-                        //             buttons += `
-                    //                 <button class="btn btn-sm btn-success me-1"
-                    //                     onclick="LeaveActions.submit(${data.id}, 'hod_approve')">
-                    //                     Approve
-                    //                 </button>
-                    //                 <button class="btn btn-sm btn-danger"
-                    //                     onclick="LeaveActions.submit(${data.id}, 'hod_reject')">
-                    //                     Reject
-                    //                 </button>
-                    //             `;
-                        //         }
-
-                        //         // Admin actions (only after HOD approval)
-                        //         if (
-                        //             roles.includes('admin') &&
-                        //             data.hod_status === 'approved' &&
-                        //             data.admin_status === 'pending'
-                        //         ) {
-                        //             buttons += `
-                    //                 <button class="btn btn-sm btn-success me-1"
-                    //                     onclick="LeaveActions.submit(${data.id}, 'admin_approve')">
-                    //                     Approve
-                    //                 </button>
-                    //                 <button class="btn btn-sm btn-danger"
-                    //                     onclick="LeaveActions.submit(${data.id}, 'admin_reject')">
-                    //                     Reject
-                    //                 </button>
-                    //             `;
-                        //         }
-
-                        //         return buttons || '<span class="text-muted">No Action</span>';
-                        //     }
-                        // },
-
-                        {
-                            data: null,
-                            title: 'Actions',
-                            orderable: false,
-                            searchable: false,
-                            render: function(data) {
-                                const roles = CURRENT_USER_ROLE || [];
-                                let buttons = '';
-
-                                // Always show Edit / View / Delete
-                                buttons += `
-                                        <button class="btn btn-sm btn-info me-1"
-                                            onclick="RecordsModal.openEdit(${data.id})">
-                                            Edit
-                                        </button>
-                                        <button class="btn btn-sm btn-primary me-1"
-                                            onclick="RecordsModal.openView(${data.id})">
-                                            View
-                                        </button>
-                                        <button class="btn btn-sm btn-danger me-1"
-                                            onclick="RecordsModal.delete(${data.id})">
-                                            Delete
-                                        </button>
-                                    `;
-
-                                // HOD actions
-                                // if (roles.includes('hod') && data.hod_status === 'pending') {
-                                //     buttons += `
-                            //         <button class="btn btn-sm btn-success me-1"
-                            //             onclick="LeaveActions.submit(${data.id}, 'hod_approve')">
-                            //             Approve
-                            //         </button>
-                            //         <button class="btn btn-sm btn-danger me-1"
-                            //             onclick="LeaveActions.submit(${data.id}, 'hod_reject')">
-                            //             Reject
-                            //         </button>
-                            //     `;
-                                // }
-
-                                // Admin actions (only after HOD approval)
-                                // if (roles.includes('admin') && data.hod_status === 'approved' &&  data.admin_status === 'pending'                            ) {
-                                //     buttons += `
-                            //         <button class="btn btn-sm btn-success me-1"
-                            //             onclick="LeaveActions.submit(${data.id}, 'admin_approve')">
-                            //             Approve
-                            //         </button>
-                            //         <button class="btn btn-sm btn-danger me-1"
-                            //             onclick="LeaveActions.submit(${data.id}, 'admin_reject')">
-                            //             Reject
-                            //         </button>
-                            //     `;
-                                // }
-
-                                return buttons || '<span class="text-muted">No Action</span>';
-                            }
-                        },
-
-                        // {
-                        //     data: null,
-                        //     title: 'Action',
-                        //     orderable: false,
-                        //     searchable: false,
-                        //     className: 'text-nowrap',
-                        //     render: function(data) {
-
-                        //         const roles = CURRENT_USER_ROLE || [];
-
-                        //         // HOD actions
-                        //         if (roles.includes('hod')) {
-                        //             if (data.hod_status === 'pending') {
-                        //                 return `
-                    //                     <button class="btn btn-success btn-sm act-approve" data-id="${data.id}">Approve</button>
-                    //                     <button class="btn btn-danger btn-sm act-reject" data-id="${data.id}">Reject</button>
-                    //                 `;
-                        //             }
-                        //             return `<span class="text-muted">Already ${data.hod_status}</span>`;
-                        //         }
-
-                        //         // Admin actions
-                        //         if (roles.includes('admin')) {
-                        //             if (data.hod_status !== 'approved') {
-                        //                 return `<span class="text-muted">Waiting for HOD</span>`;
-                        //             }
-
-                        //             if (data.admin_status === 'pending') {
-                        //                 return `
-                    //                         <button class="btn btn-success btn-sm act-approve" data-id="${data.id}">Approve</button>
-                    //                         <button class="btn btn-danger btn-sm act-reject" data-id="${data.id}">Reject</button>
-                    //                     `;
-                        //             }
-
-                        //             return `<span class="text-muted">Already ${data.admin_status}</span>`;
-                        //         }
-
-                        //         return '';
-                        //     }
-                        // },
-
-                        //         {
-                        //             data: null,
-                        //             title: 'Actions',
-                        //             orderable: false,
-                        //             searchable: false,
-                        //             className: 'text-nowrap',
-                        //             render: row => `
-                    //     <button class="btn btn-sm btn-info" onclick="RecordsModal.openEdit(${row.id})">Edit</button>
-                    //     <button class="btn btn-sm btn-primary" onclick="RecordsModal.openView(${row.id})">View</button>
-                    //     <button class="btn btn-sm btn-danger" onclick="RecordsModal.delete(${row.id})">Delete</button>
-                    // `
-                        //         }
-                    ],
-                    dom: `
-                            <'row mb-2'
-                                <'col-12 col-md-3 d-flex align-items-center justify-content-center justify-content-md-start'l>
-                                <'col-12 col-md-5 d-flex align-items-center justify-content-center'B>
-                                <'col-12 col-md-4 d-flex align-items-center justify-content-center justify-content-md-end'f>
-                            >
-                            <'row'<'col-12'tr>>
-                            <'row mt-2'
-                                <'col-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start'i>
-                                <'col-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end'p>
-                            >
-                        `,
-
-                    buttons: [{
-                            extend: "copy",
-                            className: "btn btn-sm btn-outline-primary me-1"
-                        },
-                        {
-                            extend: "csv",
-                            className: "btn btn-sm btn-outline-success me-1"
-                        },
-                        {
-                            extend: "excel",
-                            className: "btn btn-sm btn-outline-info me-1"
-                        },
-                        {
-                            extend: "pdfHtml5",
-                            className: "btn btn-sm btn-outline-danger me-1"
-                        },
-                        {
-                            extend: "print",
-                            className: "btn btn-sm btn-outline-secondary"
+                            return row.admin_status || 'pending';
                         }
-                    ],
+                    },
 
-                    // drawCallback: function() {
-                    //     // ✅ Force responsive recalc after table render
-                    //     if (this.responsive) this.responsive.recalc();
-                    // }
+                    // {
+                    //     data: 'admin_attachment',
+                    //     title: 'Admin Attachment',
+                    //     render: file => file ?
+                    //         `<a href="${file}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>` :
+                    //         '<span class="text-muted">No File</span>'
+                    // },
+                    {
+                        data: 'status',
+                        title: 'Status',
+                        render: s => badge(s)
+                    },
+                    // {
+                    //     data: null,
+                    //     title: 'Actions',
+                    //     orderable: false,
+                    //     searchable: false,
+                    //     render: function(data) {
 
-                    drawCallback: function() {
-                        if (recordsTable && recordsTable.responsive) {
-                            recordsTable.responsive.recalc();
+                    //         const roles = CURRENT_USER_ROLE || [];
+
+                    //         let buttons = '';
+
+                    //         // HOD actions
+                    //         if (roles.includes('hod') && data.hod_status === 'pending') {
+                    //             buttons += `
+                        //                 <button class="btn btn-sm btn-success me-1"
+                        //                     onclick="LeaveActions.submit(${data.id}, 'hod_approve')">
+                        //                     Approve
+                        //                 </button>
+                        //                 <button class="btn btn-sm btn-danger"
+                        //                     onclick="LeaveActions.submit(${data.id}, 'hod_reject')">
+                        //                     Reject
+                        //                 </button>
+                        //             `;
+                    //         }
+
+                    //         // Admin actions (only after HOD approval)
+                    //         if (
+                    //             roles.includes('admin') &&
+                    //             data.hod_status === 'approved' &&
+                    //             data.admin_status === 'pending'
+                    //         ) {
+                    //             buttons += `
+                        //                 <button class="btn btn-sm btn-success me-1"
+                        //                     onclick="LeaveActions.submit(${data.id}, 'admin_approve')">
+                        //                     Approve
+                        //                 </button>
+                        //                 <button class="btn btn-sm btn-danger"
+                        //                     onclick="LeaveActions.submit(${data.id}, 'admin_reject')">
+                        //                     Reject
+                        //                 </button>
+                        //             `;
+                    //         }
+
+                    //         return buttons || '<span class="text-muted">No Action</span>';
+                    //     }
+                    // },
+
+                    {
+                        data: null,
+                        title: 'Actions',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data) {
+                            const roles = CURRENT_USER_ROLE || [];
+                            let buttons = '';
+
+                            // Always show Edit / View / Delete
+                            buttons += `
+                                            <button class="btn btn-sm btn-info me-1"
+                                                onclick="RecordsModal.openEdit(${data.id})">
+                                                Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-primary me-1"
+                                                onclick="RecordsModal.openView(${data.id})">
+                                                View
+                                            </button>
+                                           <!--  <button class="btn btn-sm btn-danger me-1"
+                                                onclick="RecordsModal.delete(${data.id})">
+                                                Delete
+                                            </button> -->
+                                        `;
+
+                            // HOD actions
+                            // if (roles.includes('hod') && data.hod_status === 'pending') {
+                            //     buttons += `
+                                //         <button class="btn btn-sm btn-success me-1"
+                                //             onclick="LeaveActions.submit(${data.id}, 'hod_approve')">
+                                //             Approve
+                                //         </button>
+                                //         <button class="btn btn-sm btn-danger me-1"
+                                //             onclick="LeaveActions.submit(${data.id}, 'hod_reject')">
+                                //             Reject
+                                //         </button>
+                                //     `;
+                            // }
+
+                            // Admin actions (only after HOD approval)
+                            // if (roles.includes('admin') && data.hod_status === 'approved' &&  data.admin_status === 'pending'                            ) {
+                            //     buttons += `
+                                //         <button class="btn btn-sm btn-success me-1"
+                                //             onclick="LeaveActions.submit(${data.id}, 'admin_approve')">
+                                //             Approve
+                                //         </button>
+                                //         <button class="btn btn-sm btn-danger me-1"
+                                //             onclick="LeaveActions.submit(${data.id}, 'admin_reject')">
+                                //             Reject
+                                //         </button>
+                                //     `;
+                            // }
+
+                            return buttons || '<span class="text-muted">No Action</span>';
                         }
+                    },
+
+                    // {
+                    //     data: null,
+                    //     title: 'Action',
+                    //     orderable: false,
+                    //     searchable: false,
+                    //     className: 'text-nowrap',
+                    //     render: function(data) {
+
+                    //         const roles = CURRENT_USER_ROLE || [];
+
+                    //         // HOD actions
+                    //         if (roles.includes('hod')) {
+                    //             if (data.hod_status === 'pending') {
+                    //                 return `
+                        //                     <button class="btn btn-success btn-sm act-approve" data-id="${data.id}">Approve</button>
+                        //                     <button class="btn btn-danger btn-sm act-reject" data-id="${data.id}">Reject</button>
+                        //                 `;
+                    //             }
+                    //             return `<span class="text-muted">Already ${data.hod_status}</span>`;
+                    //         }
+
+                    //         // Admin actions
+                    //         if (roles.includes('admin')) {
+                    //             if (data.hod_status !== 'approved') {
+                    //                 return `<span class="text-muted">Waiting for HOD</span>`;
+                    //             }
+
+                    //             if (data.admin_status === 'pending') {
+                    //                 return `
+                        //                         <button class="btn btn-success btn-sm act-approve" data-id="${data.id}">Approve</button>
+                        //                         <button class="btn btn-danger btn-sm act-reject" data-id="${data.id}">Reject</button>
+                        //                     `;
+                    //             }
+
+                    //             return `<span class="text-muted">Already ${data.admin_status}</span>`;
+                    //         }
+
+                    //         return '';
+                    //     }
+                    // },
+
+                    //         {
+                    //             data: null,
+                    //             title: 'Actions',
+                    //             orderable: false,
+                    //             searchable: false,
+                    //             className: 'text-nowrap',
+                    //             render: row => `
+                        //     <button class="btn btn-sm btn-info" onclick="RecordsModal.openEdit(${row.id})">Edit</button>
+                        //     <button class="btn btn-sm btn-primary" onclick="RecordsModal.openView(${row.id})">View</button>
+                        //     <button class="btn btn-sm btn-danger" onclick="RecordsModal.delete(${row.id})">Delete</button>
+                        // `
+                    //         }
+                ],
+                dom: `
+                                <'row mb-2'
+                                    <'col-12 col-md-3 d-flex align-items-center justify-content-center justify-content-md-start'l>
+                                    <'col-12 col-md-5 d-flex align-items-center justify-content-center'B>
+                                    <'col-12 col-md-4 d-flex align-items-center justify-content-center justify-content-md-end'f>
+                                >
+                                <'row'<'col-12'tr>>
+                                <'row mt-2'
+                                    <'col-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start'i>
+                                    <'col-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end'p>
+                                >
+                            `,
+
+                buttons: [{
+                        extend: "copy",
+                        className: "btn btn-sm btn-outline-primary me-1"
+                    },
+                    {
+                        extend: "csv",
+                        className: "btn btn-sm btn-outline-success me-1"
+                    },
+                    {
+                        extend: "excel",
+                        className: "btn btn-sm btn-outline-info me-1"
+                    },
+                    {
+                        extend: "pdfHtml5",
+                        className: "btn btn-sm btn-outline-danger me-1"
+                    },
+                    {
+                        extend: "print",
+                        className: "btn btn-sm btn-outline-secondary"
                     }
+                ],
 
-                });
-            },
+                // drawCallback: function() {
+                //     // ✅ Force responsive recalc after table render
+                //     if (this.responsive) this.responsive.recalc();
+                // }
 
-            reload() {
-                if (recordsTable) {
-                    recordsTable.ajax.reload(null, false);
-                    recordsTable.responsive.recalc();
+                drawCallback: function() {
+                    if (recordsTable && recordsTable.responsive) {
+                        recordsTable.responsive.recalc();
+                    }
                 }
-            }
-        };
+
+            });
 
 
-        /* ======================================================
-         * BADGE HELPER
-         * ====================================================== */
-        function badge(status) {
-            switch (status) {
-                case 'pending':
-                case 0:
-                    return '<span class="badge bg-warning text-dark">Pending</span>';
-                case 'approved':
-                case 1:
-                    return '<span class="badge bg-success">Approved</span>';
-                case 'rejected':
-                case 2:
-                    return '<span class="badge bg-danger">Rejected</span>';
-                default:
-                    return '<span class="badge bg-secondary">Unknown</span>';
+            // Attach toggle handler AFTER DataTable render
+            // $('#recordsTable').on('click', '.toggle-text', function() {
+            //     let $link = $(this);
+            //     let $short = $link.siblings('.short-text');
+            //     let $full = $link.siblings('.full-text');
+            //     if ($full.hasClass('d-none')) {
+            //         $short.hide();
+            //         $full.removeClass('d-none');
+            //         $link.text('Show less');
+            //     } else {
+            //         $short.show();
+            //         $full.addClass('d-none');
+            //         $link.text('Show more');
+            //     }
+            // });
+        },
+
+        reload() {
+            if (recordsTable) {
+                recordsTable.ajax.reload(null, false);
+                recordsTable.responsive.recalc();
             }
         }
-
-        /* ======================================================
-         * Faculty SELECT HELPER
-         * ====================================================== */
-        const FacultySelect = {
-            load(selectedId = null) {
-                console.log('selected faculty', selectedId);
-                let options = '<option value="">Select Faculty</option>';
-                if (!FACULTY_CACHE.length) {
-                    options += '<option value="">No faculties found</option>';
-                } else {
-                    FACULTY_CACHE.forEach(f => {
-                        options +=
-                            `<option value="${f.id}" ${f.id == selectedId ? 'selected' : ''}>${f.name}</option>`;
-                    });
-                }
-                $('#faculty_id').html(options);
-            }
-        };
-
-        /* ======================================================
-         * Department SELECT HELPER
-         * ====================================================== */
-        const DepartmentSelect = {
-            load(facultyId, selectedId = null) {
-                console.log('selected department', selectedId);
-                let options = '<option value="">Select Department</option>';
-                if (!DEPARTMENT_CACHE.length) {
-                    options += '<option value="">No departments found</option>';
-                } else {
-                    DEPARTMENT_CACHE
-                        .filter(d => d.faculty_id == facultyId)
-                        .forEach(d => {
-                            options +=
-                                `<option value="${d.id}" ${d.id == selectedId ? 'selected' : ''}>${d.name}</option>`;
-                        });
-                }
-                $('#department_id').html(options);
-            }
-        };
-
-        $(document).on('change', '#faculty_id', function() {
-            DepartmentSelect.load(this.value);
-        });
-
-        /* ======================================================
-         * MODAL HANDLER
-         * ====================================================== */
-        const RecordsModal = {
-            setMode(mode) {
-                const isView = mode === 'view';
-                $('#recordsForm input, #recordsForm select')
-                    .prop('readonly', isView)
-                    .prop('disabled', isView);
-                $('#recordsSubmitBtn').toggle(!isView);
-                $('#recordsModalTitle').text({
-                    add: 'Add Record',
-                    edit: 'Edit Record',
-                    view: 'View Record'
-                } [mode]);
-            },
-
-            openCreate() {
-                RecordsForm.reset();
-                this.setMode('add');
-                FacultySelect.load();
-                $('#department_id').html('<option value="">Select Department</option>');
-                $('#recordsModal').modal('show');
-            },
-
-            // openEdit(id) {
-            //     RecordsForm.reset();
-            //     this.setMode('edit');
-            //     const url = "{{ route('manage.leaves.show', ':id') }}".replace(':id', id);
-            //     $.ajax({
-            //         url,
-            //         headers: {
-            //             Authorization: 'Bearer ' + localStorage.getItem('token'),
-            //             Accept: 'application/json'
-            //         },
-            //         success: res => {
-            //             const c = res.data;
-            //             console.log(c);
-            //             $('#record_id').val(c.id);
-
-            //             $('#name').val(c.resident.name);
-            //             $('#scholar').val(c.resident.scholar_no);
-
-            //             $('#type').val(c.type);
-            //             $('#reason').val(c.reason);
-            //             $('#start_date').val(c.start_date);
-            //             $('#end_date').val(c.end_date);
-            //             $('#applied_at').val(c.applied_at);
-
-            //             $('#reason').val(c.reason);
-            //             // $('#code').val(c.code ?? '');
-            //             // FacultySelect.load(c.faculty_id);
-            //             // DepartmentSelect.load(c.faculty_id, c.department_id);
-
-            //             $('#status').val(c.status);
-            //             $('#recordsModal').modal('show');
-            //         },
-            //         error: () => Swal.fire('Error', 'Unable to load department', 'error')
-            //     });
-            // },
-            openEdit(id) {
-                RecordsForm.reset();
-                this.setMode('edit');
-                const url = "{{ route('manage.leaves.show', ':id') }}".replace(':id', id);
-
-                $.ajax({
-                    url,
-                    headers: {
-                        Authorization: 'Bearer ' + localStorage.getItem('token'),
-                        Accept: 'application/json'
-                    },
-                    success: res => {
-                        const c = res.data;
-                        console.log(c);
-
-                        // Basic resident + leave info
-                        $('#record_id').val(c.id);
-                        $('#name').val(c.resident.name);
-                        $('#scholar').val(c.resident.scholar_no);
-
-                        $('#type').val(c.type.toLowerCase());
-
-                        $('#reason').val(c.reason);
-                        $('#description').val(c.description);
-                        // $('#start_date').val(c.start_date);
-                        // $('#end_date').val(c.end_date);
-                        // $('#applied_at').val(c.applied_at);
-                        // Normalize dates for input fields 
-                        $('#start_date').val(formatDateForInput(c.start_date));
-                        $('#end_date').val(formatDateForInput(c.end_date));
-                        // Show pretty display if needed 
-                        $('#applied_at').val(formatDateForDisplay(c.applied_at));
-                        // Duration auto-calc 
-                        $('#duration').val(c.duration ?? calculateDuration(c.start_date, c.end_date));
-
-                        $('#status').val(c.status);
-
-                        // Populate approvals from JSON
-                        if (c.approvals && Array.isArray(c.approvals)) {
-                            const hod = c.approvals.find(a => a.role.toLowerCase() === 'hod');
-                            const admin = c.approvals.find(a => a.role.toLowerCase() === 'admin');
-
-                            if (hod) {
-                                $('#hod_status').val(hod.status);
-                                $('#hod_remarks').val(hod.remarks);
-                                $('#hod_action_at').val(hod.action_at);
-                            }
-
-                            if (admin) {
-                                $('#admin_status').val(admin.status);
-                                $('#admin_remarks').val(admin.remarks);
-                                $('#admin_action_at').val(admin.action_at);
-                            }
-                        }
-
-                        $('#recordsModal').modal('show');
-                    },
-                    error: () => Swal.fire('Error', 'Unable to load leave record', 'error')
-                });
-            },
-
-            openView(id) {
-                RecordsForm.reset();
-                this.setMode('view');
-                const url = "{{ route('manage.leaves.show', ':id') }}".replace(':id', id);
-                $.ajax({
-                    url,
-                    headers: {
-                        Authorization: 'Bearer ' + localStorage.getItem('token'),
-                        Accept: 'application/json'
-                    },
-                    success: res => {
-                        const c = res.data;
-                        $('#record_id').val(c.id);
-                        $('#name').val(c.name);
-                        $('#code').val(c.code ?? '');
-                        FacultySelect.load(c.faculty_id);
-                        DepartmentSelect.load(c.faculty_id, c.department_id);
-                        $('#status').val(c.status);
-                        $('#recordsModal').modal('show');
-                    },
-                    error: () => Swal.fire('Error', 'Unable to load faculty', 'error')
-                });
-            },
-
-            // delete(id) {
-            //     Swal.fire({
-            //         title: 'Are you sure?',
-            //         text: 'This action cannot be undone',
-            //         icon: 'warning',
-            //         showCancelButton: true,
-            //         confirmButtonColor: '#d33'
-            //     }).then(result => {
-            //         if (result.isConfirmed) {
-            //             const url = "{{ route('courses.destroy', ':id') }}".replace(':id', id);
-            //             $.ajax({
-            //                 url,
-            //                 type: 'DELETE',
-            //                 // success: () => {
-            //                 success: res => {
-            //                     // Swal.fire('Deleted!', 'Course removed', 'success');
-            //                     Swal.fire('Deleted!', res.message, 'success');
-            //                     RecordsTable.reload();
-            //                 }
-            //             });
-            //         }
-            //     });
-            // }
-            delete(id) {
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: 'This action cannot be undone',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    confirmButtonText: 'Yes, delete it',
-                    cancelButtonText: 'Cancel'
-                }).then(result => {
-
-                    if (!result.isConfirmed) return;
-
-                    const url = "{{ route('manage.leaves.destroy', ':id') }}".replace(':id', id);
-
-                    Swal.fire({
-                        title: 'Deleting...',
-                        text: 'Please wait',
-                        allowOutsideClick: false,
-                        didOpen: () => Swal.showLoading()
-                    });
-
-                    $.ajax({
-                        url: url,
-                        type: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                        },
-
-                        success: res => {
-                            Swal.fire(
-                                'Deleted!',
-                                res.message ?? 'Course deleted successfully',
-                                'success'
-                            );
-
-                            RecordsTable.reload();
-                        },
-
-                        error: xhr => {
-                            let message = 'Unable to delete course';
-
-                            if (xhr.status === 404) {
-                                message = 'Course not found';
-                            } else if (xhr.status === 409) {
-                                message = xhr.responseJSON?.message ??
-                                    'Course is in use and cannot be deleted';
-                            } else if (xhr.responseJSON?.message) {
-                                message = xhr.responseJSON.message;
-                            }
-
-                            Swal.fire('Error', message, 'error');
-                        }
-                    });
-                });
-            }
-
-        };
-
-        /* ======================================================
-         * FORM HANDLER
-         * ====================================================== */
-        const RecordsForm = {
-
-            init() {
-                $('#recordsForm').on('submit', this.submit.bind(this));
-            },
-
-            submit(e) {
-                e.preventDefault();
-                if (!this.validate()) return;
-
-                const id = $('#record_id').val();
-                const url = id ?
-                    "{{ route('manage.leaves.update', ':id') }}".replace(':id', id) :
-                    "{{ route('manage.leaves.store') }}";
-
-                const formData = new FormData($('#recordsForm')[0]);
-                if (id) formData.append('_method', 'PUT');
-
-                $.ajax({
-                    url,
-                    method: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: res => {
-                        Swal.fire('Success', res.message, 'success');
-                        $('#recordsModal').modal('hide');
-                        RecordsTable.reload();
-                    },
-                    error: xhr => this.handleError(xhr)
-                });
-            },
-
-            validate() {
-                let ok = true;
-                this.clearErrors();
-
-                $('#recordsForm [name]').each((_, el) => {
-                    const $el = $(el);
-                    const name = $el.attr('name');
-                    if ($el.prop('disabled') || !$el.is(':visible')) return;
-                    if (!$el.prop('required')) return;
-
-                    const type = ($el.attr('type') || '').toLowerCase();
-                    const tag = el.tagName.toLowerCase();
-                    let value = $el.val();
-
-                    if (type === 'file' && (!$el[0].files || !$el[0].files.length) && $el.data('existing') !==
-                        true) {
-                        this.error(name, 'This file is required');
-                        ok = false;
-                        return;
-                    }
-
-                    if (type === 'checkbox' && $(`[name="${name}"]:checked`).length === 0) {
-                        this.error(name, 'Please select at least one option');
-                        ok = false;
-                        return;
-                    }
-
-                    if (type === 'radio' && $(`[name="${name}"]:checked`).length === 0) {
-                        this.error(name, 'Please select an option');
-                        ok = false;
-                        return;
-                    }
-
-                    if ((value === null || value === '' || value === undefined || (tag === 'input' && !value
-                            .trim()))) {
-                        this.error(name, 'This field is required');
-                        ok = false;
-                    }
-                });
-
-                return ok;
-            },
+    };
 
 
-            handleError(xhr) {
-    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-        const allMessages = [];
-
-        Object.entries(xhr.responseJSON.errors).forEach(([field, messages]) => {
-            if (Array.isArray(messages)) {
-                this.error(field, messages[0]);
-                allMessages.push(...messages);
-            } else {
-                this.error(field, messages);
-                allMessages.push(messages);
-            }
-        });
-
-        Swal.fire('Error', allMessages.join('<br>'), 'error');
-    } else {
-        Swal.fire('Error', xhr.responseJSON?.message ?? 'Something went wrong', 'error');
+    /* ======================================================
+     * BADGE HELPER
+     * ====================================================== */
+    function badge(status) {
+        switch (status) {
+            case 'pending':
+            case 0:
+                return '<span class="badge bg-warning text-dark">Pending</span>';
+            case 'approved':
+            case 1:
+                return '<span class="badge bg-success">Approved</span>';
+            case 'rejected':
+            case 2:
+                return '<span class="badge bg-danger">Rejected</span>';
+            default:
+                return '<span class="badge bg-secondary">Unknown</span>';
+        }
     }
-},
 
-            error(field, message) {
-                const $field = $(`[name="${field}"]`);
-                if (!$field.length) return;
-                $field.addClass('is-invalid');
-                const $error = $(`#${field}_error`);
-                if ($error.length) $error.text(message).show();
-            },
-
-            clearErrors() {
-                $('#recordsForm .is-invalid').removeClass('is-invalid');
-                $('#recordsForm .invalid-feedback').text('').hide();
-            },
-
-            reset() {
-                $('#recordsForm')[0].reset();
-                $('#record_id').val('');
-                this.clearErrors();
+    /* ======================================================
+     * Faculty SELECT HELPER
+     * ====================================================== */
+    const FacultySelect = {
+        load(selectedId = null) {
+            console.log('selected faculty', selectedId);
+            let options = '<option value="">Select Faculty</option>';
+            if (!FACULTY_CACHE.length) {
+                options += '<option value="">No faculties found</option>';
+            } else {
+                FACULTY_CACHE.forEach(f => {
+                    options +=
+                        `<option value="${f.id}" ${f.id == selectedId ? 'selected' : ''}>${f.name}</option>`;
+                });
             }
-        };
+            $('#faculty_id').html(options);
+        }
+    };
+
+    /* ======================================================
+     * Department SELECT HELPER
+     * ====================================================== */
+    const DepartmentSelect = {
+        load(facultyId, selectedId = null) {
+            console.log('selected department', selectedId);
+            let options = '<option value="">Select Department</option>';
+            if (!DEPARTMENT_CACHE.length) {
+                options += '<option value="">No departments found</option>';
+            } else {
+                DEPARTMENT_CACHE
+                    .filter(d => d.faculty_id == facultyId)
+                    .forEach(d => {
+                        options +=
+                            `<option value="${d.id}" ${d.id == selectedId ? 'selected' : ''}>${d.name}</option>`;
+                    });
+            }
+            $('#department_id').html(options);
+        }
+    };
+
+    $(document).on('change', '#faculty_id', function() {
+        DepartmentSelect.load(this.value);
+    });
+
+    /* ======================================================
+     * MODAL HANDLER
+     * ====================================================== */
+    const RecordsModal = {
+        setMode(mode) {
+            const isView = mode === 'view';
+            $('#recordsForm input, #recordsForm select')
+                .prop('readonly', isView)
+                .prop('disabled', isView);
+            $('#recordsSubmitBtn').toggle(!isView);
+            $('#recordsModalTitle').text({
+                add: 'Add Record',
+                edit: 'Edit Record',
+                view: 'View Record'
+            } [mode]);
+        },
+
+        openCreate() {
+            RecordsForm.reset();
+            this.setMode('add');
+            // Clear form fields when creating new record
+            $('#name').val('');
+            $('#scholar').val('');
+            $('#applied_at').val('');
 
 
+            // FacultySelect.load();
+            // $('#department_id').html('<option value="">Select Department</option>');
+            $('#recordsModal').modal('show');
+        },
 
-        // const LeaveActions = {
+        // openEdit(id) {
+        //     RecordsForm.reset();
+        //     this.setMode('edit');
+        //     const url = "{{ route('manage.leaves.show', ':id') }}".replace(':id', id);
+        //     $.ajax({
+        //         url,
+        //         headers: {
+        //             Authorization: 'Bearer ' + localStorage.getItem('token'),
+        //             Accept: 'application/json'
+        //         },
+        //         success: res => {
+        //             const c = res.data;
+        //             console.log(c);
+        //             $('#record_id').val(c.id);
 
-        //     submit(id, action, currentStart = '', currentEnd = '') {
+        //             $('#name').val(c.resident.name);
+        //             $('#scholar').val(c.resident.scholar_no);
 
-        //         const isReject = action.includes('reject');
-        //         const roleLabel = action.startsWith('hod') ? 'HOD' : 'Admin';
-        //         const actionLabel = isReject ? 'Reject' : 'Approve';
+        //             $('#type').val(c.type);
+        //             $('#reason').val(c.reason);
+        //             $('#start_date').val(c.start_date);
+        //             $('#end_date').val(c.end_date);
+        //             $('#applied_at').val(c.applied_at);
+
+        //             $('#reason').val(c.reason);
+        //             // $('#code').val(c.code ?? '');
+        //             // FacultySelect.load(c.faculty_id);
+        //             // DepartmentSelect.load(c.faculty_id, c.department_id);
+
+        //             $('#status').val(c.status);
+        //             $('#recordsModal').modal('show');
+        //         },
+        //         error: () => Swal.fire('Error', 'Unable to load department', 'error')
+        //     });
+        // },
+        openEdit(id) {
+            RecordsForm.reset();
+            this.setMode('edit');
+            const url = "{{ route('manage.leaves.show', ':id') }}".replace(':id', id);
+
+            $.ajax({
+                url,
+                headers: {
+                    Authorization: 'Bearer ' + localStorage.getItem('token'),
+                    Accept: 'application/json'
+                },
+                success: res => {
+                    const c = res.data;
+                    console.log(c);
+
+                    // Basic resident + leave info
+                    $('#record_id').val(c.id);
+                    $('#name').val(c.resident.name);
+                    $('#scholar').val(c.resident.scholar_no);
+
+                    $('#type').val(c.type.toLowerCase());
+
+                    $('#reason').val(c.reason);
+                    $('#description').val(c.description);
+                    // $('#start_date').val(c.start_date);
+                    // $('#end_date').val(c.end_date);
+                    // $('#applied_at').val(c.applied_at);
+                    // Normalize dates for input fields 
+                    $('#start_date').val(formatDateForInput(c.start_date));
+                    $('#end_date').val(formatDateForInput(c.end_date));
+                    // Show pretty display if needed 
+                    $('#applied_at').val(formatDateForDisplay(c.applied_at));
+                    // Duration auto-calc 
+                    $('#duration').val(c.duration ?? calculateDuration(c.start_date, c.end_date));
+
+                    $('#status').val(c.status);
+
+                    // Populate approvals from JSON
+                    if (c.approvals && Array.isArray(c.approvals)) {
+                        const hod = c.approvals.find(a => a.role.toLowerCase() === 'hod');
+                        const admin = c.approvals.find(a => a.role.toLowerCase() === 'admin');
+
+                        if (hod) {
+                            $('#hod_status').val(hod.status);
+                            $('#hod_remarks').val(hod.remarks);
+                            $('#hod_action_at').val(hod.action_at);
+                        }
+
+                        if (admin) {
+                            $('#admin_status').val(admin.status);
+                            $('#admin_remarks').val(admin.remarks);
+                            $('#admin_action_at').val(admin.action_at);
+                        }
+                    }
+
+                    $('#recordsModal').modal('show');
+                },
+                error: () => Swal.fire('Error', 'Unable to load leave record', 'error')
+            });
+        },
+
+        openView(id) {
+            RecordsForm.reset();
+            this.setMode('view');
+            const url = "{{ route('manage.leaves.show', ':id') }}".replace(':id', id);
+            $.ajax({
+                url,
+                headers: {
+                    Authorization: 'Bearer ' + localStorage.getItem('token'),
+                    Accept: 'application/json'
+                },
+                success: res => {
+                    const c = res.data;
+                    // Basic resident + leave info
+                    $('#record_id').val(c.id);
+                    $('#name').val(c.resident.name);
+                    $('#scholar').val(c.resident.scholar_no);
+
+                    $('#type').val(c.type.toLowerCase());
+
+                    $('#reason').val(c.reason);
+                    $('#description').val(c.description);
+                    // $('#start_date').val(c.start_date);
+                    // $('#end_date').val(c.end_date);
+                    // $('#applied_at').val(c.applied_at);
+                    // Normalize dates for input fields 
+                    $('#start_date').val(formatDateForInput(c.start_date));
+                    $('#end_date').val(formatDateForInput(c.end_date));
+                    // Show pretty display if needed 
+                    $('#applied_at').val(formatDateForDisplay(c.applied_at));
+                    // Duration auto-calc 
+                    $('#duration').val(c.duration ?? calculateDuration(c.start_date, c.end_date));
+
+                    $('#status').val(c.status);
+
+                    // Populate approvals from JSON
+                    if (c.approvals && Array.isArray(c.approvals)) {
+                        const hod = c.approvals.find(a => a.role.toLowerCase() === 'hod');
+                        const admin = c.approvals.find(a => a.role.toLowerCase() === 'admin');
+
+                        if (hod) {
+                            $('#hod_status').val(hod.status);
+                            $('#hod_remarks').val(hod.remarks);
+                            $('#hod_action_at').val(hod.action_at);
+                        }
+
+                        if (admin) {
+                            $('#admin_status').val(admin.status);
+                            $('#admin_remarks').val(admin.remarks);
+                            $('#admin_action_at').val(admin.action_at);
+                        }
+                    }
+
+                    $('#recordsModal').modal('show');
+                },
+                error: () => Swal.fire('Error', 'Unable to load faculty', 'error')
+            });
+        },
+
+
+        // delete(id) {
+        //     Swal.fire({
+        //         title: 'Are you sure?',
+        //         text: 'This action cannot be undone',
+        //         icon: 'warning',
+        //         showCancelButton: true,
+        //         confirmButtonColor: '#d33',
+        //         confirmButtonText: 'Yes, delete it',
+        //         cancelButtonText: 'Cancel'
+        //     }).then(result => {
+
+        //         if (!result.isConfirmed) return;
+
+        //         const url = "{{ route('manage.leaves.destroy', ':id') }}".replace(':id', id);
 
         //         Swal.fire({
-        //             title: `${roleLabel} ${actionLabel} Leave`,
-        //             html: `
-    //                 <div class="mb-2 text-start">
-    //                     <label class="form-label">Standard Remarks</label>
-    //                     <select id="std_remark" class="form-select">
-    //                         <option value="">-- Custom Remark --</option>
-    //                         <option value="Approved as per policy">Approved as per policy</option>
-    //                         <option value="Leave justified">Leave justified</option>
-    //                         <option value="Insufficient reason provided">Insufficient reason provided</option>
-    //                         <option value="Attendance constraints">Attendance constraints</option>
-    //                         <option value="Not eligible for leave">Not eligible for leave</option>
-    //                     </select>
-    //                 </div>
-
-    //                 <div class="mb-2 text-start">
-    //                     <label class="form-label">
-    //                         Remarks ${isReject ? '<span class="text-danger">*</span>' : '(optional)'}
-    //                     </label>
-    //                     <textarea id="remarks"
-    //                         class="form-control"
-    //                         rows="3"
-    //                         maxlength="500"
-    //                         placeholder="Enter remarks"
-    //                     ></textarea>
-    //                 </div>
-
-    //                 <div class="row">
-    //                     <div class="col-md-6 mb-2 text-start">
-    //                         <label class="form-label">Start Date (optional)</label>
-    //                         <input type="date" id="start_date" class="form-control" value="${currentStart}">
-    //                     </div>
-    //                     <div class="col-md-6 mb-2 text-start">
-    //                         <label class="form-label">End Date (optional)</label>
-    //                         <input type="date" id="end_date" class="form-control" value="${currentEnd}">
-    //                     </div>
-    //                 </div>
-
-    //                 <div class="mb-2 text-start">
-    //                     <label class="form-label">Attachment (optional)</label>
-    //                     <input type="file" id="attachment" class="form-control">
-    //                 </div>
-    //             `,
-        //             didOpen: () => {
-        //                 const stdSelect = document.getElementById('std_remark');
-        //                 const remarks = document.getElementById('remarks');
-
-        //                 stdSelect.addEventListener('change', () => {
-        //                     if (stdSelect.value) {
-        //                         remarks.value = stdSelect.value;
-        //                         remarks.readOnly = true;
-        //                     } else {
-        //                         remarks.value = '';
-        //                         remarks.readOnly = false;
-        //                     }
-        //                 });
-        //             },
-        //             showCancelButton: true,
-        //             confirmButtonText: 'Submit',
-        //             preConfirm: () => {
-
-        //                 const remarks = document.getElementById('remarks').value.trim();
-        //                 const start = document.getElementById('start_date').value;
-        //                 const end = document.getElementById('end_date').value;
-
-        //                 if (isReject && !remarks) {
-        //                     Swal.showValidationMessage('Remarks are required for rejection');
-        //                     return false;
-        //                 }
-
-        //                 if (start && end && new Date(start) > new Date(end)) {
-        //                     Swal.showValidationMessage('Start date cannot be after end date');
-        //                     return false;
-        //                 }
-
-        //                 return {
-        //                     remarks,
-        //                     start_date: start || null,
-        //                     end_date: end || null,
-        //                     attachment: document.getElementById('attachment').files[0] ?? null
-        //                 };
-        //             }
-        //         }).then(result => {
-
-        //             if (!result.isConfirmed) return;
-
-        //             const url = "{{ route('manage.leaves.update', ':id') }}".replace(':id', id);
-
-        //             const formData = new FormData();
-        //             formData.append('_method', 'PUT');
-        //             formData.append('action', action);
-
-        //             if (result.value.remarks) formData.append('remarks', result.value.remarks);
-        //             if (result.value.start_date) formData.append('start_date', result.value.start_date);
-        //             if (result.value.end_date) formData.append('end_date', result.value.end_date);
-        //             if (result.value.attachment) formData.append('attachment', result.value.attachment);
-
-        //             $.ajax({
-        //                 url,
-        //                 type: 'POST',
-        //                 data: formData,
-        //                 processData: false,
-        //                 contentType: false,
-        //                 headers: {
-        //                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        //                 },
-        //                 success: res => {
-        //                     Swal.fire('Success', res.message, 'success');
-        //                     RecordsTable.reload();
-        //                 },
-        //                 error: xhr => {
-        //                     Swal.fire(
-        //                         'Error',
-        //                         xhr.responseJSON?.message ?? 'Action failed',
-        //                         'error'
-        //                     );
-        //                 }
-        //             });
+        //             title: 'Deleting...',
+        //             text: 'Please wait',
+        //             allowOutsideClick: false,
+        //             didOpen: () => Swal.showLoading()
         //         });
-        //     }
-        // };
 
-
-        // const LeaveActions = {
-
-        //     submit(id, action) {
-
-        //         const isReject = action.includes('reject');
-        //         const roleLabel = action.startsWith('hod') ? 'HOD' : 'Admin';
-        //         const actionText = isReject ? 'Reject' : 'Approve';
-        //         const badgeClass = isReject ? 'danger' : 'success';
-
-        //         Swal.fire({
-        //             title: `
-    //                 <div class="text-center">
-    //                     <span class="badge bg-${badgeClass} mb-2">${roleLabel} ${actionText}</span>
-    //                     ${roleLabel} ${actionText} Leave
-    //                 </div>
-    //             `,
-        //             html: `
-    //                 <div class="mb-2 text-start">
-    //                     <label class="form-label">Standard Remarks</label>
-    //                     <select id="std_remark" class="form-select">
-    //                         <option value="">-- Select --</option>
-    //                         <option value="Approved as per policy">Approved as per policy</option>
-    //                         <option value="Leave justified">Leave justified</option>
-    //                         <option value="Insufficient reason provided">Insufficient reason provided</option>
-    //                         <option value="Attendance constraints">Attendance constraints</option>
-    //                         <option value="Not eligible for leave">Not eligible for leave</option>
-    //                         <option value="__custom__">Custom remark</option>
-    //                     </select>
-    //                     <div class="invalid-feedback">Please select a remark</div>
-    //                 </div>
-
-    //                 <div class="mb-2 text-start d-none" id="remark_box">
-    //                     <label class="form-label">
-    //                         Custom Remarks ${isReject ? '<span class="text-danger">*</span>' : ''}
-    //                     </label>
-    //                     <textarea id="remarks"
-    //                         class="form-control"
-    //                         rows="3"
-    //                         maxlength="500"
-    //                         placeholder="Enter custom remarks"></textarea>
-    //                     <div class="invalid-feedback">Custom remarks are required</div>
-    //                 </div>
-
-    //                 <div class="mb-2 text-start">
-    //                     <label class="form-label">Attachment (optional)</label>
-    //                     <input type="file" id="attachment" class="form-control">
-    //                 </div>
-    //             `,
-        //             didOpen: () => {
-
-        //                 const stdSelect = document.getElementById('std_remark');
-        //                 const remarkBox = document.getElementById('remark_box');
-        //                 const remarks = document.getElementById('remarks');
-
-        //                 stdSelect.addEventListener('change', () => {
-        //                     clearInvalid(stdSelect);
-        //                     clearInvalid(remarks);
-
-        //                     if (stdSelect.value === '__custom__') {
-        //                         remarkBox.classList.remove('d-none');
-        //                         remarks.value = '';
-        //                         remarks.focus();
-        //                     } else {
-        //                         remarkBox.classList.add('d-none');
-        //                         remarks.value = '';
-        //                     }
-        //                 });
-
-        //                 remarks.addEventListener('input', () => clearInvalid(remarks));
+        //         $.ajax({
+        //             url: url,
+        //             type: 'DELETE',
+        //             headers: {
+        //                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         //             },
-        //             showCancelButton: true,
-        //             confirmButtonText: 'Submit',
-        //             preConfirm: () => {
 
-        //                 const stdSelect = document.getElementById('std_remark');
-        //                 const remarks = document.getElementById('remarks');
+        //             success: res => {
+        //                 Swal.fire(
+        //                     'Deleted!',
+        //                     res.message ?? 'Record deleted successfully',
+        //                     'success'
+        //                 );
 
-        //                 clearInvalid(stdSelect);
-        //                 clearInvalid(remarks);
+        //                 RecordsTable.reload();
+        //             },
 
-        //                 let finalRemark = null;
+        //             error: xhr => {
+        //                 let message = 'Unable to delete record';
 
-        //                 // ❌ No selection at all
-        //                 if (!stdSelect.value) {
-        //                     markInvalid(stdSelect, 'Please select a remark');
-        //                     return false;
+        //                 if (xhr.status === 404) {
+        //                     message = 'Record not found';
+        //                 } else if (xhr.status === 409) {
+        //                     message = xhr.responseJSON?.message ??
+        //                         'Record is in use and cannot be deleted';
+        //                 } else if (xhr.responseJSON?.message) {
+        //                     message = xhr.responseJSON.message;
         //                 }
 
-        //                 // ❌ Custom selected but empty
-        //                 if (stdSelect.value === '__custom__') {
-        //                     finalRemark = remarks.value.trim();
-
-        //                     if (!finalRemark) {
-        //                         markInvalid(remarks, 'Custom remarks cannot be empty');
-        //                         return false;
-        //                     }
-        //                 } else {
-        //                     finalRemark = stdSelect.value;
-        //                 }
-
-        //                 // ❌ Reject requires remarks always
-        //                 if (isReject && !finalRemark) {
-        //                     markInvalid(stdSelect, 'Remarks are mandatory for rejection');
-        //                     return false;
-        //                 }
-
-        //                 return {
-        //                     remarks: finalRemark,
-        //                     attachment: document.getElementById('attachment').files[0] ?? null
-        //                 };
+        //                 Swal.fire('Error', message, 'error');
         //             }
-        //         }).then(result => {
-
-        //             if (!result.isConfirmed) return;
-
-        //             const url = "{{ route('manage.leaves.update', ':id') }}".replace(':id', id);
-
-        //             const formData = new FormData();
-        //             formData.append('_method', 'PUT');
-        //             formData.append('action', action);
-        //             formData.append('remarks', result.value.remarks);
-
-        //             if (result.value.attachment) {
-        //                 formData.append('attachment', result.value.attachment);
-        //             }
-
-        //             $.ajax({
-        //                 url,
-        //                 type: 'POST',
-        //                 data: formData,
-        //                 processData: false,
-        //                 contentType: false,
-        //                 headers: {
-        //                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        //                 },
-        //                 success: res => {
-        //                     Swal.fire('Success', res.message, 'success');
-        //                     RecordsTable.reload();
-        //                 },
-        //                 error: xhr => {
-        //                     Swal.fire(
-        //                         'Error',
-        //                         xhr.responseJSON?.message ?? 'Action failed',
-        //                         'error'
-        //                     );
-        //                 }
-        //             });
         //         });
-        //     }
-        // };
+        //     });
+        // }
 
-        const LEAVE_REASONS = {
-            approve: [
+    };
+
+    /* ======================================================
+     * FORM HANDLER
+     * ====================================================== */
+    const RecordsForm = {
+
+        init() {
+            $('#recordsForm').on('submit', this.submit.bind(this));
+        },
+
+        submit(e) {
+            e.preventDefault();
+            if (!this.validate()) return;
+
+            const id = $('#record_id').val();
+            const url = id ?
+                "{{ route('manage.leaves.update', ':id') }}".replace(':id', id) :
+                "{{ route('manage.leaves.store') }}";
+
+            const formData = new FormData($('#recordsForm')[0]);
+            if (id) formData.append('_method', 'PUT');
+
+            $.ajax({
+                url,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: res => {
+                    Swal.fire('Success', res.message, 'success');
+                    $('#recordsModal').modal('hide');
+                    RecordsTable.reload();
+                },
+                error: xhr => this.handleError(xhr)
+            });
+        },
+
+        validate() {
+            let ok = true;
+            this.clearErrors();
+
+            $('#recordsForm [name]').each((_, el) => {
+                const $el = $(el);
+                const name = $el.attr('name');
+                if ($el.prop('disabled') || !$el.is(':visible')) return;
+                if (!$el.prop('required')) return;
+
+                const type = ($el.attr('type') || '').toLowerCase();
+                const tag = el.tagName.toLowerCase();
+                let value = $el.val();
+
+                if (type === 'file' && (!$el[0].files || !$el[0].files.length) && $el.data('existing') !==
+                    true) {
+                    this.error(name, 'This file is required');
+                    ok = false;
+                    return;
+                }
+
+                if (type === 'checkbox' && $(`[name="${name}"]:checked`).length === 0) {
+                    this.error(name, 'Please select at least one option');
+                    ok = false;
+                    return;
+                }
+
+                if (type === 'radio' && $(`[name="${name}"]:checked`).length === 0) {
+                    this.error(name, 'Please select an option');
+                    ok = false;
+                    return;
+                }
+
+                if ((value === null || value === '' || value === undefined || (tag === 'input' && !value
+                        .trim()))) {
+                    this.error(name, 'This field is required');
+                    ok = false;
+                }
+            });
+
+            return ok;
+        },
+
+
+        handleError(xhr) {
+            if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                const allMessages = [];
+
+                Object.entries(xhr.responseJSON.errors).forEach(([field, messages]) => {
+                    if (Array.isArray(messages)) {
+                        this.error(field, messages[0]);
+                        allMessages.push(...messages);
+                    } else {
+                        this.error(field, messages);
+                        allMessages.push(messages);
+                    }
+                });
+
+                Swal.fire('Error', allMessages.join('<br>'), 'error');
+            } else {
+                Swal.fire('Error', xhr.responseJSON?.message ?? 'Something went wrong', 'error');
+            }
+        },
+
+        error(field, message) {
+            const $field = $(`[name="${field}"]`);
+            if (!$field.length) return;
+            $field.addClass('is-invalid');
+            const $error = $(`#${field}_error`);
+            if ($error.length) $error.text(message).show();
+        },
+
+        clearErrors() {
+            $('#recordsForm .is-invalid').removeClass('is-invalid');
+            $('#recordsForm .invalid-feedback').text('').hide();
+        },
+
+        reset() {
+            $('#recordsForm')[0].reset();
+            $('#record_id').val('');
+            this.clearErrors();
+        }
+    };
+
+
+
+    // const LeaveActions = {
+
+    //     submit(id, action, currentStart = '', currentEnd = '') {
+
+    //         const isReject = action.includes('reject');
+    //         const roleLabel = action.startsWith('hod') ? 'HOD' : 'Admin';
+    //         const actionLabel = isReject ? 'Reject' : 'Approve';
+
+    //         Swal.fire({
+    //             title: `${roleLabel} ${actionLabel} Leave`,
+    //             html: `
+        //                 <div class="mb-2 text-start">
+        //                     <label class="form-label">Standard Remarks</label>
+        //                     <select id="std_remark" class="form-select">
+        //                         <option value="">-- Custom Remark --</option>
+        //                         <option value="Approved as per policy">Approved as per policy</option>
+        //                         <option value="Leave justified">Leave justified</option>
+        //                         <option value="Insufficient reason provided">Insufficient reason provided</option>
+        //                         <option value="Attendance constraints">Attendance constraints</option>
+        //                         <option value="Not eligible for leave">Not eligible for leave</option>
+        //                     </select>
+        //                 </div>
+
+        //                 <div class="mb-2 text-start">
+        //                     <label class="form-label">
+        //                         Remarks ${isReject ? '<span class="text-danger">*</span>' : '(optional)'}
+        //                     </label>
+        //                     <textarea id="remarks"
+        //                         class="form-control"
+        //                         rows="3"
+        //                         maxlength="500"
+        //                         placeholder="Enter remarks"
+        //                     ></textarea>
+        //                 </div>
+
+        //                 <div class="row">
+        //                     <div class="col-md-6 mb-2 text-start">
+        //                         <label class="form-label">Start Date (optional)</label>
+        //                         <input type="date" id="start_date" class="form-control" value="${currentStart}">
+        //                     </div>
+        //                     <div class="col-md-6 mb-2 text-start">
+        //                         <label class="form-label">End Date (optional)</label>
+        //                         <input type="date" id="end_date" class="form-control" value="${currentEnd}">
+        //                     </div>
+        //                 </div>
+
+        //                 <div class="mb-2 text-start">
+        //                     <label class="form-label">Attachment (optional)</label>
+        //                     <input type="file" id="attachment" class="form-control">
+        //                 </div>
+        //             `,
+    //             didOpen: () => {
+    //                 const stdSelect = document.getElementById('std_remark');
+    //                 const remarks = document.getElementById('remarks');
+
+    //                 stdSelect.addEventListener('change', () => {
+    //                     if (stdSelect.value) {
+    //                         remarks.value = stdSelect.value;
+    //                         remarks.readOnly = true;
+    //                     } else {
+    //                         remarks.value = '';
+    //                         remarks.readOnly = false;
+    //                     }
+    //                 });
+    //             },
+    //             showCancelButton: true,
+    //             confirmButtonText: 'Submit',
+    //             preConfirm: () => {
+
+    //                 const remarks = document.getElementById('remarks').value.trim();
+    //                 const start = document.getElementById('start_date').value;
+    //                 const end = document.getElementById('end_date').value;
+
+    //                 if (isReject && !remarks) {
+    //                     Swal.showValidationMessage('Remarks are required for rejection');
+    //                     return false;
+    //                 }
+
+    //                 if (start && end && new Date(start) > new Date(end)) {
+    //                     Swal.showValidationMessage('Start date cannot be after end date');
+    //                     return false;
+    //                 }
+
+    //                 return {
+    //                     remarks,
+    //                     start_date: start || null,
+    //                     end_date: end || null,
+    //                     attachment: document.getElementById('attachment').files[0] ?? null
+    //                 };
+    //             }
+    //         }).then(result => {
+
+    //             if (!result.isConfirmed) return;
+
+    //             const url = "{{ route('manage.leaves.update', ':id') }}".replace(':id', id);
+
+    //             const formData = new FormData();
+    //             formData.append('_method', 'PUT');
+    //             formData.append('action', action);
+
+    //             if (result.value.remarks) formData.append('remarks', result.value.remarks);
+    //             if (result.value.start_date) formData.append('start_date', result.value.start_date);
+    //             if (result.value.end_date) formData.append('end_date', result.value.end_date);
+    //             if (result.value.attachment) formData.append('attachment', result.value.attachment);
+
+    //             $.ajax({
+    //                 url,
+    //                 type: 'POST',
+    //                 data: formData,
+    //                 processData: false,
+    //                 contentType: false,
+    //                 headers: {
+    //                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    //                 },
+    //                 success: res => {
+    //                     Swal.fire('Success', res.message, 'success');
+    //                     RecordsTable.reload();
+    //                 },
+    //                 error: xhr => {
+    //                     Swal.fire(
+    //                         'Error',
+    //                         xhr.responseJSON?.message ?? 'Action failed',
+    //                         'error'
+    //                     );
+    //                 }
+    //             });
+    //         });
+    //     }
+    // };
+
+
+    // const LeaveActions = {
+
+    //     submit(id, action) {
+
+    //         const isReject = action.includes('reject');
+    //         const roleLabel = action.startsWith('hod') ? 'HOD' : 'Admin';
+    //         const actionText = isReject ? 'Reject' : 'Approve';
+    //         const badgeClass = isReject ? 'danger' : 'success';
+
+    //         Swal.fire({
+    //             title: `
+        //                 <div class="text-center">
+        //                     <span class="badge bg-${badgeClass} mb-2">${roleLabel} ${actionText}</span>
+        //                     ${roleLabel} ${actionText} Leave
+        //                 </div>
+        //             `,
+    //             html: `
+        //                 <div class="mb-2 text-start">
+        //                     <label class="form-label">Standard Remarks</label>
+        //                     <select id="std_remark" class="form-select">
+        //                         <option value="">-- Select --</option>
+        //                         <option value="Approved as per policy">Approved as per policy</option>
+        //                         <option value="Leave justified">Leave justified</option>
+        //                         <option value="Insufficient reason provided">Insufficient reason provided</option>
+        //                         <option value="Attendance constraints">Attendance constraints</option>
+        //                         <option value="Not eligible for leave">Not eligible for leave</option>
+        //                         <option value="__custom__">Custom remark</option>
+        //                     </select>
+        //                     <div class="invalid-feedback">Please select a remark</div>
+        //                 </div>
+
+        //                 <div class="mb-2 text-start d-none" id="remark_box">
+        //                     <label class="form-label">
+        //                         Custom Remarks ${isReject ? '<span class="text-danger">*</span>' : ''}
+        //                     </label>
+        //                     <textarea id="remarks"
+        //                         class="form-control"
+        //                         rows="3"
+        //                         maxlength="500"
+        //                         placeholder="Enter custom remarks"></textarea>
+        //                     <div class="invalid-feedback">Custom remarks are required</div>
+        //                 </div>
+
+        //                 <div class="mb-2 text-start">
+        //                     <label class="form-label">Attachment (optional)</label>
+        //                     <input type="file" id="attachment" class="form-control">
+        //                 </div>
+        //             `,
+    //             didOpen: () => {
+
+    //                 const stdSelect = document.getElementById('std_remark');
+    //                 const remarkBox = document.getElementById('remark_box');
+    //                 const remarks = document.getElementById('remarks');
+
+    //                 stdSelect.addEventListener('change', () => {
+    //                     clearInvalid(stdSelect);
+    //                     clearInvalid(remarks);
+
+    //                     if (stdSelect.value === '__custom__') {
+    //                         remarkBox.classList.remove('d-none');
+    //                         remarks.value = '';
+    //                         remarks.focus();
+    //                     } else {
+    //                         remarkBox.classList.add('d-none');
+    //                         remarks.value = '';
+    //                     }
+    //                 });
+
+    //                 remarks.addEventListener('input', () => clearInvalid(remarks));
+    //             },
+    //             showCancelButton: true,
+    //             confirmButtonText: 'Submit',
+    //             preConfirm: () => {
+
+    //                 const stdSelect = document.getElementById('std_remark');
+    //                 const remarks = document.getElementById('remarks');
+
+    //                 clearInvalid(stdSelect);
+    //                 clearInvalid(remarks);
+
+    //                 let finalRemark = null;
+
+    //                 // ❌ No selection at all
+    //                 if (!stdSelect.value) {
+    //                     markInvalid(stdSelect, 'Please select a remark');
+    //                     return false;
+    //                 }
+
+    //                 // ❌ Custom selected but empty
+    //                 if (stdSelect.value === '__custom__') {
+    //                     finalRemark = remarks.value.trim();
+
+    //                     if (!finalRemark) {
+    //                         markInvalid(remarks, 'Custom remarks cannot be empty');
+    //                         return false;
+    //                     }
+    //                 } else {
+    //                     finalRemark = stdSelect.value;
+    //                 }
+
+    //                 // ❌ Reject requires remarks always
+    //                 if (isReject && !finalRemark) {
+    //                     markInvalid(stdSelect, 'Remarks are mandatory for rejection');
+    //                     return false;
+    //                 }
+
+    //                 return {
+    //                     remarks: finalRemark,
+    //                     attachment: document.getElementById('attachment').files[0] ?? null
+    //                 };
+    //             }
+    //         }).then(result => {
+
+    //             if (!result.isConfirmed) return;
+
+    //             const url = "{{ route('manage.leaves.update', ':id') }}".replace(':id', id);
+
+    //             const formData = new FormData();
+    //             formData.append('_method', 'PUT');
+    //             formData.append('action', action);
+    //             formData.append('remarks', result.value.remarks);
+
+    //             if (result.value.attachment) {
+    //                 formData.append('attachment', result.value.attachment);
+    //             }
+
+    //             $.ajax({
+    //                 url,
+    //                 type: 'POST',
+    //                 data: formData,
+    //                 processData: false,
+    //                 contentType: false,
+    //                 headers: {
+    //                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    //                 },
+    //                 success: res => {
+    //                     Swal.fire('Success', res.message, 'success');
+    //                     RecordsTable.reload();
+    //                 },
+    //                 error: xhr => {
+    //                     Swal.fire(
+    //                         'Error',
+    //                         xhr.responseJSON?.message ?? 'Action failed',
+    //                         'error'
+    //                     );
+    //                 }
+    //             });
+    //         });
+    //     }
+    // };
+
+    const LEAVE_REASONS = {
+        approve: [
             'Approved as per hostel policy',
             'Medical documents verified',
             'Family emergency approved',
@@ -1782,9 +1954,9 @@
             'Conference / seminar participation approved',
             'Vacation leave sanctioned',
             'Administrative discretion approval'
-            ],
+        ],
 
-            reject: [
+        reject: [
             'Insufficient reason provided',
             'Required documents missing',
             'Leave limit exceeded',
@@ -1801,9 +1973,9 @@
             'Contradicts academic schedule or university guidelines',
             'Emergency not substantiated',
             'Administrative discretion — leave not granted'
-            ],
+        ],
 
-            cancel: [
+        cancel: [
             'Resident withdrew application voluntarily',
             'Changed travel / personal plans',
             'Recovered from illness, leave not required',
@@ -1816,199 +1988,199 @@
             'Administrative cancellation due to hostel policy',
             'Cancelled due to overlapping approved leave',
             'Cancelled by resident before review started'
-            ]
+        ]
 
 
-        };
+    };
 
 
-        // const LeaveActions = {
-        //     submit(id, action) {
+    // const LeaveActions = {
+    //     submit(id, action) {
 
-        //         const isReject = action.includes('reject');
-        //         const roleLabel = action.startsWith('hod') ? 'HOD' : 'Admin';
-        //         const actionText = isReject ? 'Reject' : 'Approve';
-        //         const badgeClass = isReject ? 'danger' : 'success';
+    //         const isReject = action.includes('reject');
+    //         const roleLabel = action.startsWith('hod') ? 'HOD' : 'Admin';
+    //         const actionText = isReject ? 'Reject' : 'Approve';
+    //         const badgeClass = isReject ? 'danger' : 'success';
 
-        //         const reasons = isReject ? LEAVE_REASONS.reject : LEAVE_REASONS.approve;
+    //         const reasons = isReject ? LEAVE_REASONS.reject : LEAVE_REASONS.approve;
 
-        //         const reasonOptions = reasons.map(r =>
-        //             `<option value="${r}">${r}</option>`
-        //         ).join('');
+    //         const reasonOptions = reasons.map(r =>
+    //             `<option value="${r}">${r}</option>`
+    //         ).join('');
 
-        //         let selectedAttachment = null;
+    //         let selectedAttachment = null;
 
-        //         Swal.fire({
-        //             title: `
-    //         <div class="text-center">
-    //             <span class="badge bg-${badgeClass} mb-1">${roleLabel} ${actionText}</span>
-    //             <div>${roleLabel} ${actionText} Leave</div>
-    //         </div>
-    //     `,
-        //             html: `
-    //         <div class="text-start">
+    //         Swal.fire({
+    //             title: `
+        //         <div class="text-center">
+        //             <span class="badge bg-${badgeClass} mb-1">${roleLabel} ${actionText}</span>
+        //             <div>${roleLabel} ${actionText} Leave</div>
+        //         </div>
+        //     `,
+    //             html: `
+        //         <div class="text-start">
 
-    //             <label class="form-label mb-1">
-    //                 ${isReject ? 'Rejection Reason' : 'Approval Reason'}
-    //                 <span class="text-danger">*</span>
-    //             </label>
+        //             <label class="form-label mb-1">
+        //                 ${isReject ? 'Rejection Reason' : 'Approval Reason'}
+        //                 <span class="text-danger">*</span>
+        //             </label>
 
-    //             <select id="std_remark" class="form-select mb-3">
-    //                 <option value="">-- Select --</option>
-    //                 ${reasonOptions}
-    //                 <option value="__custom__">Other (Custom)</option>
-    //             </select>
-    //             <div class="invalid-feedback">Please select a reason</div>
+        //             <select id="std_remark" class="form-select mb-3">
+        //                 <option value="">-- Select --</option>
+        //                 ${reasonOptions}
+        //                 <option value="__custom__">Other (Custom)</option>
+        //             </select>
+        //             <div class="invalid-feedback">Please select a reason</div>
 
-    //             <textarea id="remarks"
-    //                 class="form-control mt-3 d-none"
-    //                 rows="3"
-    //                 maxlength="500"
-    //                 placeholder="Enter custom remarks"></textarea>
-    //             <div class="invalid-feedback">Custom remarks are required</div>
+        //             <textarea id="remarks"
+        //                 class="form-control mt-3 d-none"
+        //                 rows="3"
+        //                 maxlength="500"
+        //                 placeholder="Enter custom remarks"></textarea>
+        //             <div class="invalid-feedback">Custom remarks are required</div>
 
-    //             <input type="file"
-    //                 id="attachment"
-    //                 class="form-control form-control-sm mt-2">
-    //         </div>
-    //     `,
-        //             showCancelButton: true,
-        //             confirmButtonText: 'Submit',
-        //             didOpen: () => {
+        //             <input type="file"
+        //                 id="attachment"
+        //                 class="form-control form-control-sm mt-2">
+        //         </div>
+        //     `,
+    //             showCancelButton: true,
+    //             confirmButtonText: 'Submit',
+    //             didOpen: () => {
 
-        //                 const stdSelect = document.getElementById('std_remark');
-        //                 const remarks = document.getElementById('remarks');
+    //                 const stdSelect = document.getElementById('std_remark');
+    //                 const remarks = document.getElementById('remarks');
 
-        //                 const fileInput = document.getElementById('attachment');
-        //                 fileInput.addEventListener('change', (e) => {
-        //                     selectedAttachment = e.target.files[0] ?? null;
-        //                     console.log('FILE SELECTED:', selectedAttachment);
-        //                 });
+    //                 const fileInput = document.getElementById('attachment');
+    //                 fileInput.addEventListener('change', (e) => {
+    //                     selectedAttachment = e.target.files[0] ?? null;
+    //                     console.log('FILE SELECTED:', selectedAttachment);
+    //                 });
 
-        //                 stdSelect.addEventListener('change', () => {
-        //                     clearInvalid(stdSelect);
-        //                     clearInvalid(remarks);
+    //                 stdSelect.addEventListener('change', () => {
+    //                     clearInvalid(stdSelect);
+    //                     clearInvalid(remarks);
 
-        //                     if (stdSelect.value === '__custom__') {
-        //                         remarks.classList.remove('d-none');
-        //                         remarks.value = '';
-        //                         remarks.focus();
-        //                     } else {
-        //                         remarks.classList.add('d-none');
-        //                         remarks.value = '';
-        //                     }
-        //                 });
+    //                     if (stdSelect.value === '__custom__') {
+    //                         remarks.classList.remove('d-none');
+    //                         remarks.value = '';
+    //                         remarks.focus();
+    //                     } else {
+    //                         remarks.classList.add('d-none');
+    //                         remarks.value = '';
+    //                     }
+    //                 });
 
-        //                 remarks.addEventListener('input', () => clearInvalid(remarks));
-        //             },
-        //             preConfirm: () => {
+    //                 remarks.addEventListener('input', () => clearInvalid(remarks));
+    //             },
+    //             preConfirm: () => {
 
-        //                 const stdSelect = document.getElementById('std_remark');
-        //                 const remarks = document.getElementById('remarks');
-        //                 const fileInput = document.getElementById('attachment');
+    //                 const stdSelect = document.getElementById('std_remark');
+    //                 const remarks = document.getElementById('remarks');
+    //                 const fileInput = document.getElementById('attachment');
 
-        //                 clearInvalid(stdSelect);
-        //                 clearInvalid(remarks);
+    //                 clearInvalid(stdSelect);
+    //                 clearInvalid(remarks);
 
-        //                 if (!stdSelect.value) {
-        //                     markInvalid(stdSelect, 'Please select a reason');
-        //                     return false;
-        //                 }
+    //                 if (!stdSelect.value) {
+    //                     markInvalid(stdSelect, 'Please select a reason');
+    //                     return false;
+    //                 }
 
-        //                 let finalRemark = stdSelect.value;
+    //                 let finalRemark = stdSelect.value;
 
-        //                 if (stdSelect.value === '__custom__') {
-        //                     finalRemark = remarks.value.trim();
-        //                     if (!finalRemark) {
-        //                         markInvalid(remarks, 'Custom remarks are required');
-        //                         return false;
-        //                     }
-        //                 }
+    //                 if (stdSelect.value === '__custom__') {
+    //                     finalRemark = remarks.value.trim();
+    //                     if (!finalRemark) {
+    //                         markInvalid(remarks, 'Custom remarks are required');
+    //                         return false;
+    //                     }
+    //                 }
 
-        //                 if (isReject && !finalRemark) {
-        //                     markInvalid(stdSelect, 'Remarks are mandatory for rejection');
-        //                     return false;
-        //                 }
+    //                 if (isReject && !finalRemark) {
+    //                     markInvalid(stdSelect, 'Remarks are mandatory for rejection');
+    //                     return false;
+    //                 }
 
-        //                 // return {
-        //                 //     remarks: finalRemark,
-        //                 //     attachment: document.getElementById('attachment').files[0] ?? null
-        //                 // };
+    //                 // return {
+    //                 //     remarks: finalRemark,
+    //                 //     attachment: document.getElementById('attachment').files[0] ?? null
+    //                 // };
 
-        //                 // ✅ CAPTURE FILE HERE
-        //                 selectedAttachment = fileInput?.files?.[0] ?? null;
+    //                 // ✅ CAPTURE FILE HERE
+    //                 selectedAttachment = fileInput?.files?.[0] ?? null;
 
-        //                 return {
-        //                     remarks: finalRemark
-        //                 };
-        //             }
+    //                 return {
+    //                     remarks: finalRemark
+    //                 };
+    //             }
 
-        //         }).then(result => {
+    //         }).then(result => {
 
-        //             if (!result.isConfirmed) return;
+    //             if (!result.isConfirmed) return;
 
-        //             const url = "{{ route('manage.leaves.update', ':id') }}".replace(':id', id);
+    //             const url = "{{ route('manage.leaves.update', ':id') }}".replace(':id', id);
 
-        //             const formData = new FormData();
-        //             formData.append('_method', 'PUT');
-        //             formData.append('action', action);
-        //             formData.append('remarks', result.value.remarks);
+    //             const formData = new FormData();
+    //             formData.append('_method', 'PUT');
+    //             formData.append('action', action);
+    //             formData.append('remarks', result.value.remarks);
 
-        //             if (result.value.attachment) {
-        //                 formData.append('attachment', result.value.attachment);
-        //             }
-        //             if (selectedAttachment) {
-        //                 formData.append('attachment', selectedAttachment);
-        //             }
+    //             if (result.value.attachment) {
+    //                 formData.append('attachment', result.value.attachment);
+    //             }
+    //             if (selectedAttachment) {
+    //                 formData.append('attachment', selectedAttachment);
+    //             }
 
-        //             $.ajax({
-        //                 url,
-        //                 type: 'POST',
-        //                 data: formData,
-        //                 processData: false,
-        //                 contentType: false,
-        //                 headers: {
-        //                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        //                 },
-        //                 success: res => {
-        //                     Swal.fire('Success', res.message, 'success');
-        //                     RecordsTable.reload();
-        //                 },
-        //                 error: xhr => {
-        //                     Swal.fire(
-        //                         'Error',
-        //                         xhr.responseJSON?.message ?? 'Action failed',
-        //                         'error'
-        //                     );
-        //                 }
-        //             });
-        //         });
-        //     }
-        // };
+    //             $.ajax({
+    //                 url,
+    //                 type: 'POST',
+    //                 data: formData,
+    //                 processData: false,
+    //                 contentType: false,
+    //                 headers: {
+    //                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    //                 },
+    //                 success: res => {
+    //                     Swal.fire('Success', res.message, 'success');
+    //                     RecordsTable.reload();
+    //                 },
+    //                 error: xhr => {
+    //                     Swal.fire(
+    //                         'Error',
+    //                         xhr.responseJSON?.message ?? 'Action failed',
+    //                         'error'
+    //                     );
+    //                 }
+    //             });
+    //         });
+    //     }
+    // };
 
 
 
-        const LeaveActions = {
-            open(id, action) {
-                const isReject = action.includes('reject');
-                const roleLabel = action.startsWith('hod') ? 'HOD' : 'Admin';
+    const LeaveActions = {
+        open(id, action) {
+            const isReject = action.includes('reject');
+            const roleLabel = action.startsWith('hod') ? 'HOD' : 'Admin';
 
-                // Title
-                document.getElementById('leaveActionTitle').innerText =
-                    `${roleLabel} ${isReject ? 'Reject' : 'Approve'} Leave`;
+            // Title
+            document.getElementById('leaveActionTitle').innerText =
+                `${roleLabel} ${isReject ? 'Reject' : 'Approve'} Leave`;
 
-                // set hidden values
-                document.getElementById('leave_id').value = id;
-                document.getElementById('leave_action').value = action;
+            // set hidden values
+            document.getElementById('leave_id').value = id;
+            document.getElementById('leave_action').value = action;
 
-                // Fill reason options
-                const reasons = isReject ? LEAVE_REASONS.reject : LEAVE_REASONS.approve;
-                const reasonSelect = document.getElementById('leave_reason');
-                reasonSelect.innerHTML = `<option value="">-- Select --</option>`;
-                reasons.forEach(r => {
-                    reasonSelect.innerHTML += `<option value="${r}">${r}</option>`;
-                });
-                reasonSelect.innerHTML += `<option value="__custom__">Other (Custom)</option>`;
+            // Fill reason options
+            const reasons = isReject ? LEAVE_REASONS.reject : LEAVE_REASONS.approve;
+            const reasonSelect = document.getElementById('leave_reason');
+            reasonSelect.innerHTML = `<option value="">-- Select --</option>`;
+            reasons.forEach(r => {
+                reasonSelect.innerHTML += `<option value="${r}">${r}</option>`;
+            });
+            reasonSelect.innerHTML += `<option value="__custom__">Other (Custom)</option>`;
 
                 // reset
                 document.getElementById('leave_custom_reason').value = '';
@@ -2426,6 +2598,7 @@
 
 
 
+    {{-- Shifted in Main Js
     <script>
         // // Common date formatter for your layout
         // function formatDateForInput(dateStr) {
@@ -2480,5 +2653,74 @@
             const e = dayjs(formatDateForInput(end));
             return e.diff(s, 'day') + 1;
         }
+    </script>
+
+    <script>
+        function formatExpandable(text) {
+            if (!text) return '<span class="text-muted">N/A</span>';
+            let safeText = $('<div>').text(text).html(); // escape HTML
+            if (safeText.length > 50) {
+                let shortText = safeText.substring(0, 50) + '...';
+                return `
+                    <span class="short-text">${shortText}</span>
+                    <a href="javascript:void(0)" class="toggle-text">Show more</a>
+                    <span class="full-text d-none">${safeText}</span>
+                `;
+            }
+            return safeText;
+        }
+
+        $(document).on('click', '.toggle-text', function() {
+            let $link = $(this);
+            let $container = $link.closest('div'); // scope to the current cell container
+            let $short = $container.find('.short-text');
+            let $full = $container.find('.full-text');
+
+            if ($full.hasClass('d-none')) {
+                $short.hide();
+                $full.removeClass('d-none');
+                $link.text('Show less');
+            } else {
+                $short.show();
+                $full.addClass('d-none');
+                $link.text('Show more');
+            }
+        });
+    </script>
+Shifted in Main Js --}}
+
+
+    <script>
+        // function openAttachmentModal(encoded) {
+        //     // Build clean URL
+        //     let url = `/files/${encoded}`;
+
+        //     // Set iframe src
+        //     document.getElementById('attachmentFrame').src = url;
+
+        //     // Show modal (Bootstrap 5)
+        //     let modal = new bootstrap.Modal(document.getElementById('attachmentModal'));
+        //     modal.show();
+        // }
+
+
+        // function openAttachmentModal(encoded) {
+        //     let url = `/files/${encoded}`; // ✅ clean route
+        //     document.getElementById('attachmentFrame').src = url;
+        //     let modal = new bootstrap.Modal(document.getElementById('attachmentModal'));
+        //     modal.show();
+        // }
+
+        // function openAttachmentModal(encoded) {
+        //     // Build the correct URL
+        //     let url = `/files/${encoded}`;
+
+        //     // Set iframe src
+        //     document.getElementById('attachmentFrame').src = url;
+
+        //     // Show modal
+        //     let modal = new bootstrap.Modal(document.getElementById('attachmentModal'));
+        //     modal.show();
+        // }
     </script>
 @endpush

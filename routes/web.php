@@ -24,6 +24,8 @@ use App\Http\Controllers\{
 };
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\ApiV1\Resident\LeaveController as ResidentLeaveController;
+use App\Http\Controllers\ApiV1\AttachmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,6 +61,7 @@ Route::get('/login', fn() => view('frontend.pages.auth.login'))->name('login');
 // Route::middleware(['auth:sanctum', 'role:resident'])->group(function () {
 Route::prefix('resident')->group(function () {
     Route::view('/dashboard', 'resident.dashboard')->name('resident.dashboard');
+    Route::view('/leaves', 'backend.resident.leaves')->name('resident.leaves');
     Route::view('/leave-request', 'resident.leave_request')->name('resident.leave_request');
     Route::view('/leave_request_status', 'resident.leave_request_status')->name('resident.leave_request_status');
     Route::get('/room-details', fn() => view('resident.room_change_request'))->name('resident.room_change_request');
@@ -77,6 +80,8 @@ Route::prefix('resident')->group(function () {
     Route::view('/visitors', 'resident.visitors')->name('resident.visitors');
     Route::view('/subscriptions', 'resident.subscriptions')->name('resident.subscriptions');
     Route::get('/checkout_status', fn() => view('resident.checkout_status'))->name('resident.checkout.status');
+
+    Route::view('/checkouts', 'backend.resident.checkouts')->name('resident.checkouts');
 
     // Payment confirmations
     Route::view('/pay/confirm', 'resident.payment_confirm')->name('resident.payment.confirm');
@@ -163,7 +168,14 @@ Route::prefix('admin')->group(function () {
 
     // Route::view('residents', 'backend.admin.residents')->name('admin.residents');
 
+    Route::view('manage/faculties', 'backend.admin.faculties')->name('manage.faculties');
+    Route::view('manage/departments', 'backend.admin.departments')->name('manage.departments');
+    Route::view('manage/courses', 'backend.admin.courses')->name('manage.courses');
+
+    Route::view('residents', 'backend.admin.residents')->name('admin.residents');
+    
     Route::view('leaves', 'backend.admin.leaves')->name('admin.leaves');
+    Route::view('/checkouts', 'backend.admin.checkouts')->name('admin.checkouts');
 });
 
 /*
@@ -293,6 +305,9 @@ Route::prefix('warden')->group(function () {
     Route::view('/add-accessory', 'warden.addaccessories')->name('warden.adda_ccessories');
 
     Route::view('/fine', 'warden.fine')->name('warden.fine');
+
+    Route::view('leave-requests', 'backend.warden.leaves')->name('warden.leaves');
+    Route::view('checkouts', 'backend.warden.checkouts')->name('warden.checkouts');
 });
 
 /*
@@ -446,6 +461,37 @@ Route::middleware(['web'])->group(function () {
         ->name('accountant.app');
 });
 
+// routes/web.php
+Route::get('/files/{file}', function ($file) {
+    $decoded = base64_decode($file);
+    $path = storage_path('app/public/' . $decoded);
+
+    if (!file_exists($path)) {
+        abort(404, 'File not found');
+    }
+
+    return response()->file($path, [
+        'Content-Type' => mime_content_type($path),
+    ])->setContentDisposition('inline', basename($path));
+})->name('files.show');
+
+Route::get('/leave/verify/{token}', [AttachmentController::class, 'verifyPage']);
+
+// Route::get('/files/{file}', function ($file) {
+//     $decoded = base64_decode($file);
+//     $path = storage_path('app/public/' . $decoded);
+
+//     if (!file_exists($path)) {
+//         abort(404);
+//     }
+
+//     return response()->file($path, [
+//         'Content-Type' => mime_content_type($path),
+//     ])->setContentDisposition('inline', basename($path));
+// });
+
+
+
 // Admin pages
 // Route::middleware(['api.auth:admin', 'role:admin'])->group(function () {
 //     Route::view('/admin/beds', 'admin.beds')->name('admin.beds');
@@ -481,3 +527,18 @@ Route::middleware(['web'])->group(function () {
 // Route::get('/login', function () {
 //     return view('login');
 // })->name('login');
+
+// Resident Leave Routes
+// Route::middleware(['auth', 'resident'])->prefix('resident')->name('resident.')->group(function () {
+//     Route::resource('leaves', ResidentLeaveController::class);
+    
+//     // Additional routes
+//     Route::post('leaves/{leave}/cancel', [ResidentLeaveController::class, 'cancel'])
+//         ->name('leaves.cancel');
+    
+//     Route::get('leaves/{leave}/gate-pass', [ResidentLeaveController::class, 'gatePass'])
+//         ->name('leaves.gatepass');
+    
+//     Route::get('leaves/summary', [ResidentLeaveController::class, 'summary'])
+//         ->name('leaves.summary');
+// });

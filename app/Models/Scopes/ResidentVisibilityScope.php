@@ -192,54 +192,54 @@ class ResidentVisibilityScope implements Scope
     // }
 
 
-    public function apply(Builder $builder, Model $model)
-    {
-        $user = auth()->user();
+    // public function apply(Builder $builder, Model $model)
+    // {
+    //     $user = auth()->user();
 
-        if (!$user) {
-            $builder->whereRaw('1 = 0');
-            return;
-        }
+    //     if (!$user) {
+    //         $builder->whereRaw('1 = 0');
+    //         return;
+    //     }
 
-        $roles = collect($user->getRoleNames())
-            ->map(fn($r) => strtoupper(trim($r)))
-            ->toArray();
+    //     $roles = collect($user->getRoleNames())
+    //         ->map(fn($r) => strtoupper(trim($r)))
+    //         ->toArray();
 
-        // FULL ACCESS ROLES
-        if (array_intersect($roles, ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'ROOT'])) {
-            return; // no restrictions
-        }
+    //     // FULL ACCESS ROLES
+    //     if (array_intersect($roles, ['SUPER_ADMIN', 'SYSTEM_ADMIN', 'ROOT'])) {
+    //         return; // no restrictions
+    //     }
 
-        // ADMIN (GLOBAL ACCESS) - even if building_id null
-        if (in_array('ADMIN', $roles)) {
-            if (empty($user->building_id)) {
-                return; // full access
-            }
-        }
+    //     // ADMIN (GLOBAL ACCESS) - even if building_id null
+    //     if (in_array('ADMIN', $roles)) {
+    //         if (empty($user->building_id)) {
+    //             return; // full access
+    //         }
+    //     }
 
-        // WARDEN - MUST have building
-        if (in_array('WARDEN', $roles)) {
-            $buildingIds = $user->building_id;
+    //     // WARDEN - MUST have building
+    //     if (in_array('WARDEN', $roles)) {
+    //         $buildingIds = $user->building_id;
 
-            if (is_string($buildingIds)) {
-                $buildingIds = json_decode($buildingIds, true) ?: explode(',', $buildingIds);
-            }
+    //         if (is_string($buildingIds)) {
+    //             $buildingIds = json_decode($buildingIds, true) ?: explode(',', $buildingIds);
+    //         }
 
-            $buildingIds = array_filter((array)$buildingIds);
+    //         $buildingIds = array_filter((array)$buildingIds);
 
-            if (empty($buildingIds)) {
-                $builder->whereRaw('1 = 0');
-                return;
-            }
+    //         if (empty($buildingIds)) {
+    //             $builder->whereRaw('1 = 0');
+    //             return;
+    //         }
 
-            $builder->whereHas('resident.user', function ($q) use ($buildingIds) {
-                $q->whereIn('building_id', $buildingIds);
-            });
+    //         $builder->whereHas('resident.user', function ($q) use ($buildingIds) {
+    //             $q->whereIn('building_id', $buildingIds);
+    //         });
 
-            return;
-        }
+    //         return;
+    //     }
 
-        // OTHER ROLES - NO ACCESS
-        $builder->whereRaw('1 = 0');
-    }
+    //     // OTHER ROLES - NO ACCESS
+    //     $builder->whereRaw('1 = 0');
+    // }
 }

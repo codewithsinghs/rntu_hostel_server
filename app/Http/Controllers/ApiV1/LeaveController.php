@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Transformers\LeaveTransformer;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -81,6 +82,7 @@ class LeaveController extends Controller
                     'leaves.id',
                     'leaves.type',
                     'leaves.reason',
+                    'leaves.description',
                     'leaves.attachment',
                     'leaves.start_date',
                     'leaves.end_date',
@@ -92,6 +94,7 @@ class LeaveController extends Controller
                     'leaves.admin_remarks',
                     'leaves.admin_action_at',
                     'leaves.created_at',
+                    'leaves.approvals',
 
                     // Resident fields
                     'residents.name as resident_name',
@@ -141,12 +144,14 @@ class LeaveController extends Controller
                 $query->where('leaves.start_date', '<=', $startDateTo);
             }
 
+
             // ========== GLOBAL SEARCH ==========
             if ($search = trim($request->input('search.value'))) {
                 $query->where(function ($q) use ($search) {
                     $q->where('leaves.type', 'like', "%{$search}%")
                         ->orWhere('leaves.status', 'like', "%{$search}%")
                         ->orWhere('leaves.reason', 'like', "%{$search}%")
+                        ->orWhere('leaves.description', 'like', "%{$search}%")
                         ->orWhere('leaves.attachment', 'like', "%{$search}%")
                         ->orWhere('residents.name', 'like', "%{$search}%")
                         ->orWhere('residents.scholar_no', 'like', "%{$search}%")
@@ -171,6 +176,7 @@ class LeaveController extends Controller
                 'status' => 'leaves.status',
                 'type' => 'leaves.type',
                 'reason' => 'leaves.reason',
+                'description' => 'leaves.description',
                 'attachment' => 'leaves.attachment',
                 'hod_status' => 'leaves.hod_status',
                 'admin_status' => 'leaves.admin_status',
@@ -228,6 +234,20 @@ class LeaveController extends Controller
                 ->take((int) $request->length)
                 ->get();
 
+            // If no approvals yet, start with empty array
+            $formattedApprovals = $records->map(function ($leave) {
+                return [
+                    'approvals' => $leave->formatted_approvals,
+                ];
+            });
+            // $approvals = $records->approvals ?? [];
+            //     // Format approvals into a consistent structure 
+            // $formattedApprovals = collect($approvals)->map(function ($approval) {
+            //     return ['role' => $approval['role'] ?? null, 'status' => $approval['status'] ?? null, 'remarks' => $approval['remarks'] ?? null, 'action_by' => $approval['action_by'] ?? null, 'action_at' => isset($approval['action_at']) ? \Carbon\Carbon::parse($approval['action_at'])->format('d M Y, h:i A') : null,];
+            // });
+
+            Log::info('approvals', ['approvals' => $formattedApprovals]);
+
             // ========== FORMAT RESPONSE ==========
             $formattedLeaves = $records->map(function ($leave) {
                 $startDate = $leave->start_date ? \Carbon\Carbon::parse($leave->start_date) : null;
@@ -235,6 +255,11 @@ class LeaveController extends Controller
                 $createdAt = $leave->created_at ? $leave->created_at->timezone('Asia/Kolkata') : null;
                 $hodActionAt = $leave->hod_action_at ? \Carbon\Carbon::parse($leave->hod_action_at)->timezone('Asia/Kolkata') : null;
                 $adminActionAt = $leave->admin_action_at ? \Carbon\Carbon::parse($leave->admin_action_at)->timezone('Asia/Kolkata') : null;
+
+                $admin = $leave->admin_meta;
+                $hod = $leave->hod_meta;
+
+                // Log::info('hod meta', ['hod meta' => $hod]);
 
                 return [
                     // 'DT_RowId' => 'row_' . $leave->id,
@@ -261,9 +286,12 @@ class LeaveController extends Controller
                     'status_html' => $this->getStatusHtml($leave->status),
 
                     'reason' => $leave->reason ? ucfirst($leave->reason) : null,
+                    'description' => $leave->description ? ucfirst($leave->description) : null,
                     'attachment' => $leave->attachment,
                     'duration' => $startDate && $endDate ? $startDate->diffInDays($endDate) + 1 : null,
 
+                    // 🔥 MODEL-DRIVEN APPROVALS
+                    'approvals' => $leave->formatted_approvals,
                     // 'hod_status' => $leave->hod_status,
                     // 'hod_remarks' => $leave->hod_remarks,
                     // 'hod_action_at' => $hodActionAt ? $hodActionAt->format('d M Y, h:i A') : null,
@@ -271,13 +299,24 @@ class LeaveController extends Controller
                     'hod_status' => 'approved',
                     'hod_remarks' => 'Auto approved by system',
                     'hod_action_at' =>  null,
+                    // 'admin_status'     => $hod['status'],
+                    'hod_status' => 'approved',
+                    // 'hod_remarks'    => $hod['remarks'],
+                    'hod_remarks' => 'Auto approved by system',
+                    'hod_action_at'  => $hod['action_at_f'],
+                    'hod_attachment' => $hod['attachment'],
 
                     'hod_action_at_raw' => $leave->hod_action_at,
 
-                    'admin_status' => $leave->admin_status,
-                    'admin_remarks' => $leave->admin_remarks,
-                    'admin_action_at' => $adminActionAt ? $adminActionAt->format('d M Y, h:i A') : null,
-                    'admin_action_at_raw' => $leave->admin_action_at,
+                    // 'admin_status' => $leave->admin_status,
+                    // 'admin_remarks' => $leave->admin_remarks,
+                    // 'admin_action_at' => $adminActionAt ? $adminActionAt->format('d M Y, h:i A') : null,
+                    // 'admin_action_at_raw' => $leave->admin_action_at,
+
+                    'admin_status'     => $admin['status'],
+                    'admin_remarks'    => $admin['remarks'],
+                    'admin_action_at'  => $admin['action_at_f'],
+                    'admin_attachment' => $admin['attachment'],
 
                     'email' => $leave->email,
                     'building' => $leave->building_name,
@@ -353,7 +392,7 @@ class LeaveController extends Controller
         try {
             if ($request->hasFile('attachment')) {
                 $validated['attachment'] = $request->file('attachment')
-                    ->store('leaves', 'public');
+                    ->store('leaveapps', 'public');
             }
 
             $leave = Leave::create([
@@ -609,7 +648,7 @@ class LeaveController extends Controller
 
                 // 🔧 TEMP BYPASS: admin can act even if HOD pending
                 'admin_approve' => [
-                    'roles' => ['admin'],
+                    'roles' => ['admin', 'warden'],
                     'from'  => fn($l) =>
                     in_array($l->hod_status, ['pending', 'approved'])
                         && $l->admin_status === 'pending',
@@ -752,7 +791,10 @@ class LeaveController extends Controller
 
                 $leave->update(array_merge($updates, [
                     'approvals' => $approvals,
+                    'token' => $leave->token ?? Str::uuid(), // generate a new unique token
                 ]));
+
+                
             }
 
             /*
@@ -895,5 +937,113 @@ class LeaveController extends Controller
     private function state($value): string
     {
         return trim(strtolower((string) $value));
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $user  = $request->user();
+            $leave = Leave::lockForUpdate()->findOrFail($id);
+
+            // Normalize roles
+            $roles = collect($user->getRoleNames() ?? [])
+                ->map(fn($r) => strtolower($r));
+
+            /*
+        |----------------------------------------------------------
+        | AUTHORIZATION
+        |----------------------------------------------------------
+        */
+
+            // Applicant can delete only if pending
+            if (
+                $leave->resident->user_id === $user->id
+                && $leave->status !== 'pending'
+            ) {
+                return $this->error(
+                    'Approved or rejected leave cannot be deleted',
+                    [],
+                    409
+                );
+            }
+
+            // Non-admin, non-owner cannot delete
+            if (
+                $leave->resident->user_id !== $user->id
+                && !$roles->contains('admin')
+            ) {
+                return $this->error(
+                    'You are not authorized to delete this leave',
+                    [],
+                    403
+                );
+            }
+
+            /*
+        |----------------------------------------------------------
+        | DELETE FILES (SAFE)
+        |----------------------------------------------------------
+        */
+
+            // 1️⃣ Main leave attachment
+            if ($leave->attachment && \Storage::disk('public')->exists($leave->attachment)) {
+                \Storage::disk('public')->delete($leave->attachment);
+            }
+
+            // 2️⃣ Approval attachments (HOD / Admin / etc)
+            foreach ($leave->approvals ?? [] as $approval) {
+                if (
+                    !empty($approval['attachment'])
+                    && \Storage::disk('public')->exists($approval['attachment'])
+                ) {
+                    Storage::disk('public')->delete($approval['attachment']);
+                }
+            }
+
+            /*
+        |----------------------------------------------------------
+        | DELETE RECORD
+        |----------------------------------------------------------
+        */
+            $leave->delete();
+
+            DB::commit();
+
+            return $request->expectsJson()
+                ? $this->success('Leave deleted successfully')
+                : back()->with('swal_success', 'Leave deleted successfully');
+        } catch (ModelNotFoundException $e) {
+            DB::rollBack();
+
+            return $request->expectsJson()
+                ? $this->error('Leave not found', [], 404)
+                : back()->with('swal_error', 'Leave not found');
+        } catch (QueryException $e) {
+            DB::rollBack();
+
+            Log::error('Leave Delete DB Error', [
+                'leave_id' => $id,
+                'user_id'  => optional($request->user())->id,
+                'error'    => $e->getMessage(),
+            ]);
+
+            return $request->expectsJson()
+                ? $this->error('Database error while deleting leave', [], 500)
+                : back()->with('swal_error', 'Database error');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            Log::error('Leave Delete Error', [
+                'leave_id' => $id,
+                'user_id'  => optional($request->user())->id,
+                'error'    => $e->getMessage(),
+            ]);
+
+            return $request->expectsJson()
+                ? $this->error('Failed to delete leave', [], 500)
+                : back()->with('swal_error', 'Failed to delete leave');
+        }
     }
 }

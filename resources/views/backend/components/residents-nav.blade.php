@@ -39,8 +39,9 @@
 <p>Attendance & Leave </p>
 <ul class="nav">
     <li>
-        <a href="{{ url('/resident/leave-request') }}"
-            class="{{ Request::is('resident/leave-request') ? 'active' : '' }}">
+        {{-- <a href="{{ url('/resident/leave-request') }}" --}}
+        <a href="{{ url('/resident/leaves') }}"
+            class="{{ Request::is('resident/leaves') ? 'active' : '' }}">
             <span><i class="fas fa-calendar-alt"></i></span>Leaves
         </a>
     </li>

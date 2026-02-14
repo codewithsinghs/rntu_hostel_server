@@ -327,7 +327,7 @@
 
                             <span class="input-set">
                                 <label>Parent's Contact</label>
-                                <input type="text" id="edit_paren_contact">
+                                <input type="text" id="edit_parent_contact">
                             </span>
                             <span class="input-set">
                                 <label>Guardian's Contact</label>
@@ -347,11 +347,19 @@
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
                                     <option value="checkout">Checkout</option>
+                                    <option value="checkedout">Checkout</option>
                                 </select>
                                 <div class="invalid-feedback" id="status_error"></div>
                             </span>
 
+                            <span class="input-set">
+                                <label>Check-Out Date</label>
+                                <!-- <input type="date" id="edit_check_in_date"> -->
+                                <!-- <input type="datetime-local" id="edit_check_in_date">
+                                <small id="check_in_display"></small> -->
+                                <input type="text" class="datetime-picker" id="edit_check_out_date">
 
+                            </span> 
 
                         </div>
 
@@ -721,7 +729,7 @@
 
                     $('#edit_father_name').val(data.fathers_name ?? '');
                     $('#edit_mother_name').val(data.mothers_name ?? '');
-                    $('#edit_paren_contact').val(data.parent_contact ?? '');
+                    $('#edit_parent_contact').val(data.parent_contact ?? '');
                     $('#edit_guardian_name').val(data.guardians_name ?? '');
                     $('#edit_guardian_contact').val(data.guardian_contact ?? '');
                     // $('#editstatus').data(data.status);
@@ -1551,7 +1559,7 @@
 
                     $('#edit_father_name').val(data.fathers_name ?? '');
                     $('#edit_mother_name').val(data.mothers_name ?? '');
-                    $('#edit_paren_contact').val(data.parent_contact ?? '');
+                    $('#edit_parent_contact').val(data.parent_contact ?? '');
                     $('#edit_guardian_name').val(data.guardians_name ?? '');
                     $('#edit_guardian_contact').val(data.guardian_contact ?? '');
                     // $('#editstatus').data(data.status);
@@ -2004,7 +2012,8 @@
             const ResidentApp = {
 
                 config: {
-                    apiUrl: "{{ url('/api/admin/residents') }}",
+                    // apiUrl: "{{ url('/api/admin/residents') }}",
+                    apiUrl: "{{ url('/api/admin/manage/residents') }}",
                     token: localStorage.getItem('token'),
                     table: '#residentTable',
                     tbody: '#residentList',
@@ -2094,7 +2103,8 @@
                                 class="text-primary fw-semibold view-profile"
                                 data-id="${r.id}">
                                 ${r.scholar_no ?? 'N/A'}
-                                </a>
+                                </a><br>
+                                            Enrollment: ${r.scholar_no ?? 'N/A'}<br>
                             </td>
                             <td>${r.name ?? 'N/A'}</td>
                             <td>${r.email ?? 'N/A'}</td>
@@ -2214,7 +2224,7 @@
 
                     $('#edit_father_name').val(data.fathers_name ?? '');
                     $('#edit_mother_name').val(data.mothers_name ?? '');
-                    $('#edit_paren_contact').val(data.parent_contact ?? '');
+                    $('#edit_parent_contact').val(data.parent_contact ?? '');
                     $('#edit_guardian_name').val(data.guardians_name ?? '');
                     $('#edit_guardian_contact').val(data.guardian_contact ?? '');
                     $('#edit_emergency_contact').val(data.emergency_contact ?? '');
@@ -2259,12 +2269,13 @@
 
                             fathers_name: $('#edit_father_name').val(),
                             mothers_name: $('#edit_mother_name').val(),
-                            parent_no: $('#edit_parent_contact').val(),
-                            guardian_no: $('#edit_guardian_name').val(),
-                            guardian_no: $('#edit_guardian_contact').val(),
+                            parent_contact: $('#edit_parent_contact').val(),
+                            guardian_name: $('#edit_guardian_name').val(),
+                            guardian_contact: $('#edit_guardian_contact').val(),
                             emergency_contact: $('#edit_emergency_contact').val(),
 
                             status: $('#editstatus').val(),
+                            check_out_date: $('#edit_check_out_date').val(),
 
                         };
 

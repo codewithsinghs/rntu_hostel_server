@@ -136,13 +136,13 @@ button {
     width: fit-content;
 }
 
-a {
+/* a {
     text-decoration: none;
 }
 
 a:hover {
     color: var(--white);
-}
+} */
 
 .h1,
 .h2,
@@ -476,9 +476,9 @@ ol {
     }
 }
 
-a {
+/* a {
     color: var(--white);
-}
+} */
 
 .view-btn {
     background-color: #0a2f63;

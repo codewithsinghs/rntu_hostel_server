@@ -2,67 +2,80 @@
 
 namespace App\Models;
 
-use App\Models\Payment;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Enums\BillingStatus;
 
 class Subscription extends Model
 {
-    use HasFactory, SoftDeletes;
-
     protected $fillable = [
-        'guest_id',
         'resident_id',
-        'fee_head_id',
-        'item_type',
-        'item_id',
-        'next_invoice_generation',
-        'fee_id',
-        'price',
-        'total_amount',
-        'subscription_type',
+        'invoice_id',
+        'invoice_item_id',
+        'service_code',
+        'service_type',
+        'service_name',
+        'unit_price',
+        'quantity',
+        'billing_type',
+        'billing_cycle',
         'start_date',
         'end_date',
+        'next_billing_date',
+        'last_billed_at',
         'status',
         'remarks',
-        'created_by'
     ];
 
-    protected $hidden = [
-        'updated_at',
-        'created_at',
-        // add other sensitive or recursive fields
+    protected $casts = [
+        'start_date'        => 'date',
+        'end_date'          => 'date',
+        'next_billing_date' => 'date',
+        'last_billed_at'    => 'date',
+        'remarks'        => 'json',
     ];
 
-    public function resident()
+    /* ===================== RELATIONS ===================== */
+
+    public function resident(): BelongsTo
     {
         return $this->belongsTo(Resident::class);
     }
 
-    public function fee()
+    public function invoice(): BelongsTo
     {
-        return $this->belongsTo(Fee::class);
+        return $this->belongsTo(Invoice::class);
     }
 
-    public function payments()
+    public function invoiceItem(): BelongsTo
     {
-        return $this->hasMany(Payment::class);
+        return $this->belongsTo(InvoiceItem::class);
     }
 
-    public function feeHead()
+    /**
+     * Historical invoice items for this subscription
+     */
+    public function invoiceItems(): HasMany
     {
-        return $this->belongsTo(FeeHead::class, 'fee_head_id');
+        return $this->hasMany(InvoiceItem::class, 'item_id', 'service_code')
+            ->where('item_type', $this->service_type);
     }
 
-    public function createdBy()
+    /* ===================== HELPERS ===================== */
+
+    public function isActive(): bool
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->status === BillingStatus::ACTIVE->value;
     }
 
-    public function invoices()
+    public function lockForBilling(): void
     {
-        return $this->hasMany(Invoice::class, 'subscription_id');
+        $this->update(['status' => BillingStatus::BILLING_LOCKED->value]);
+    }
+
+    public function unlock(): void
+    {
+        $this->update(['status' => BillingStatus::ACTIVE->value]);
     }
 }

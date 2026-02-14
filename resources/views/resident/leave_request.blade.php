@@ -202,7 +202,7 @@
 
             const formData = new FormData(form); // Automatically includes the file input
 
-            fetch(`/api/resident/leave`, {
+            fetch(`/api/resident/leaves`, {
                     method: "POST",
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,

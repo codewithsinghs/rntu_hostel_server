@@ -31,6 +31,7 @@ return new class extends Migration
             $table->text('admin_remarks')->nullable();
             $table->timestamp('admin_approved_at')->nullable();
 
+            // $table->string('token')->unique()->nullable();
             // Overall status (derived from HOD + Admin)
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
 

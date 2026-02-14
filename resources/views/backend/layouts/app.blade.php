@@ -48,7 +48,7 @@
     <!-- 24122025  date time Picker -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-
+    <link rel="stylesheet" href="{{ asset('backend/css/style.css') }}" />
     <!-- Page-specific Styles -->
     @stack('styles')
 
@@ -561,7 +561,7 @@
         });
     </script>
 
-    @include('layouts.swal')
+    @include('backend.layouts.swal')
     <script>
         $(document).ajaxError(function(event, xhr) {
             if (xhr.status === 422) {

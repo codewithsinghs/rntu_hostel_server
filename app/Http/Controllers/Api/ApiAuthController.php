@@ -1047,7 +1047,7 @@ class ApiAuthController extends Controller
 
     public function show(Request $request)
     {
-        Log::info('Profile fetch initiated');
+        // Log::info('Profile fetch initiated');
 
         try {
 

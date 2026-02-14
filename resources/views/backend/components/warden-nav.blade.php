@@ -88,8 +88,8 @@
 <p>Request Management</p>
 <ul class="nav">
     <li>
-        <a href="{{ route('warden.leave_requests') }}"
-            class="nav-link {{ request()->routeIs('warden.leave_requests') ? 'active' : '' }}" id="leaveRequestsTab">
+        <a href="{{ route('warden.leaves') }}"
+            class="nav-link {{ request()->routeIs('warden.leaves') ? 'active' : '' }}" id="leaveRequestsTab">
             <span><i class="bi bi-calendar-x"></i></span> Leave Requests
         </a>
     </li>

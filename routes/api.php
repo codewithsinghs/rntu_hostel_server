@@ -47,7 +47,11 @@ use App\Http\Controllers\ApiV1\RoomResController;
 use App\Http\Controllers\ApiV1\BedResController;
 
 use App\Http\Controllers\ApiV1\LeaveController;
+// use App\Http\Controllers\ApiV1\LeaveController as AdminLeaveController;
+use App\Http\Controllers\ApiV1\Resident\LeaveController as ResidentLeaveController;
+use App\Http\Controllers\ApiV1\CheckoutsController;
 
+use App\Http\Controllers\ApiV1\AttachmentController;
 use App\Http\Controllers\CroneJobsController;
 /*
 |--------------------------------------------------------------------------
@@ -177,7 +181,7 @@ Route::middleware(['dual_auth'])->group(function () {
         // Route::put('faculties/{id}', [FacultiesController::class, 'update']); // Update building
         // Route::delete('faculties/{id}', [FacultiesController::class, 'destroy']); // Delete building
         Route::apiResource('faculties', FacultyController::class);
-
+    
         // Departments Apis
         Route::get('departments', [DepartmentController::class, 'index']);
         Route::post('departments/create', [DepartmentController::class, 'store']);
@@ -222,9 +226,10 @@ Route::middleware(['dual_auth'])->group(function () {
 
         Route::apiResource('beds', BedResController::class);
         //FETCH RESIDENTS
-        // Route::get('residents', [ResidentController::class, 'getAllResidents']);
+        Route::get('residents', [ResidentController::class, 'getAllResidents']);
         Route::get('residentswarden', [ResidentController::class, 'getAllResidents']);
-        Route::apiResource('residents', ResidentResController::class);
+        Route::apiResource('manage/residents', ResidentResController::class);
+        Route::put('manage/residents/{resident}/check-in', [ResidentResController::class, 'updateCheckInDate']);
         Route::put('residents/{resident}/check-in', [ResidentResController::class, 'updateCheckInDate']);
 
         // Route::get('residents', [ResidentController::class, 'getAllResidents']);
@@ -407,8 +412,12 @@ Route::middleware(['dual_auth'])->group(function () {
     Route::prefix('resident')->group(function () {
         //Resident Routes
         //Leave Request
-        Route::post('leave', [LeaveRequestController::class, 'store']);
+        Route::post('leaves', [LeaveRequestController::class, 'store']);
         Route::get('leave-requests', [LeaveRequestController::class, 'leaveRequestByResident']);
+
+        Route::resource('leaves', ResidentLeaveController::class)
+            ->only(['index', 'store', 'show', 'destroy']);
+
         // Resident requests room change
         Route::post('room-change/request', [RoomChangeController::class, 'requestRoomChange']);
         // Resident fetches their room change requests
@@ -549,6 +558,10 @@ Route::post('/crone-job/generate-invoices-on-subscriptions-expiry', [CroneJobsCo
 
 Route::middleware('auth:sanctum')->get('resident/dashboard', [ResidentController::class, 'dashboard']);
 
+// routes/api.php
+Route::get('/files/{file}', [AttachmentController::class, 'download'])
+    ->name('api.download.attachment');
+
 
 
 // $roles = ['admin' => 'role:admin', 'warden' => 'role:warden', 'hod' => 'role:hod', 'resident' => 'role:resident',];
@@ -563,3 +576,45 @@ Route::middleware('auth:sanctum')->get('resident/dashboard', [ResidentController
 // Route::prefix('manage')->middleware(['auth:sanctum', 'role:admin|warden|hod'])->group(function () {
 //     Route::apiResource('leaves', LeaveController::class)->names('manage.leaves');
 // });
+
+
+
+// API Routes for Resident Leaves
+Route::middleware(['auth:sanctum'])->prefix('resident')->group(function () {
+    Route::apiResource('leaves', ResidentLeaveController::class)->names('resident.leaves');
+    
+    Route::post('leaves/{leave}/cancel', [ResidentLeaveController::class, 'cancel'])->name('resident.leaves.cancel');
+    Route::get('leaves/{leave}/gate-pass', [ResidentLeaveController::class, 'gatePass']);
+    Route::get('leaves-summary', [ResidentLeaveController::class, 'summary']);
+});
+
+Route::middleware(['auth:sanctum'])->prefix('checkouts')->group(function () {
+
+    Route::get('/', [CheckoutsController::class, 'index'])->name('checkouts.index');
+    Route::post('/initiate', [CheckoutsController::class, 'initiate'])->name('checkout.initiate');
+    // Show single checkout
+    Route::get('/{checkout}', [CheckoutsController::class, 'show'])->name('checkout.show');
+    Route::put('/{checkout}/update', [CheckoutsController::class, 'update'])->name('checkout.update');
+
+    Route::get('/{checkout}/clearance-data', [CheckoutsController::class, 'clearanceData'])->name('checkout.clearance');
+    Route::post('clearance-submit',   [CheckoutsController::class, 'submitClearance'])->name('checkout.clearance.submit');
+
+    // Route::post('/task/{id}/approve', [CheckoutsController::class, 'approve'])->name('checkout.approvals');
+    Route::post('/approval-tasks/{task}/approve', [CheckoutsController::class, 'approve'])->name('checkout.approvals');
+
+    Route::post('/accounts/{task}/finalize', [CheckoutsController::class, 'settleFinance'])->name('checkout.finalize');
+
+    Route::post('/{checkout}/complete', [CheckoutController::class, 'finalExit'])->name('checkout.finalexit');
+});
+
+// routes/api.php
+
+// Route::middleware('auth:sanctum')->group(function () {
+//     Route::get('/checkouts', [CheckoutController::class, 'index'])->name('checkouts.index');
+//     Route::post('/checkouts', [CheckoutController::class, 'store'])->name('checkouts.store');
+//     Route::get('/checkouts/{checkout}', [CheckoutController::class, 'show'])->name('checkouts.show');
+//     Route::put('/checkouts/{checkout}', [CheckoutController::class, 'update'])->name('checkouts.update');
+//     Route::delete('/checkouts/{checkout}', [CheckoutController::class, 'destroy'])->name('checkouts.destroy');
+//     Route::post('/checkouts/{checkout}/final-exit', [CheckoutController::class, 'finalExit'])->name('checkouts.finalExit');
+// });
+
